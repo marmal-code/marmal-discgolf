@@ -35,7 +35,7 @@ page_start('Import výsledků', 'turnaje.php');
 <?php if ($err) echo '<div class="flash err">' . h($err) . '</div>'; ?>
 <?php if (!$m): ?>
 <form method="post" class="card"><?= csrf_field() ?><input type="hidden" name="a" value="find"><input type="hidden" name="event" value="<?= $target ?>">
-  <p class="muted" style="margin-top:0">Vlož odkaz na výsledky turnaje z <b>PDGA Live</b> nebo z <b>Live scoringu Českého discgolfu</b> (ceskydiscgolf.cz → Live scoring → Výsledky, s vybranou divizí). Najdu tě (PDGA číslo / ČADG profil) a stáhnu kola, skóre, hody po jamkách, umístění a statistiky.<?= $te ? ' Výsledky se doplní do turnaje „' . h($te['name']) . '“.' : '' ?></p>
+  <p class="muted" style="margin-top:0">Vlož odkaz na výsledky turnaje z <b>PDGA Live</b> nebo z <b>Live scoringu Českého discgolfu</b> (ceskydiscgolf.cz → Live scoring → Výsledky; stačí odkaz z libovolné divize, najdu tě v té, kde jsi hrál). Najdu tě (PDGA číslo / ČADG profil) a stáhnu kola, skóre, hody po jamkách, umístění a statistiky.<?= $te ? ' Výsledky se doplní do turnaje „' . h($te['name']) . '“.' : '' ?></p>
   <div class="field"><label>Odkaz na turnaj</label><input type="text" name="url" required placeholder="https://www.pdga.com/live/event/90000 nebo https://ceskydiscgolf.cz/idg/live-scoring/vysledky?…" inputmode="url" autocomplete="off"></div>
   <div class="row2"><div class="field"><label>PDGA číslo</label><input type="number" name="pdga" value="<?= $num ?: '' ?>"></div>
     <div class="field"><label>nebo jméno (když číslo není)</label><input type="text" name="name" value="<?= $num ? '' : h($pname) ?>"></div></div>

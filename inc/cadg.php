@@ -68,17 +68,23 @@ function cadg_is_me(array $p, int $uid, string $name): bool {
     return $uid <= 0 && $name !== '' && pdga_ascii((string)($p['player_name'] ?? '')) === pdga_ascii($name);
 }
 
-/** Stáhne turnaj + moje výsledky. Vrací stejně strukturované pole jako pdga_map() (+ cadg_id). Při problému vyhodí RuntimeException. */
+/** Stáhne turnaj + moje výsledky. Projde všechny divize turnaje (nejdřív tu z odkazu), protože hraješ v různých. Vrací stejně strukturované pole jako pdga_map() (+ cadg_id). */
 function cadg_import(string $url): array {
     $u = cadg_parse_url($url); if (!$u) throw new RuntimeException('Z odkazu nevyčtu turnaj. Vlož odkaz z Live scoringu na ceskydiscgolf.cz (stránka „Výsledky“ s vybraným turnajem).');
-    if (!$u['d']) throw new RuntimeException('V odkazu chybí divize. Otevři na ceskydiscgolf.cz Live scoring → Výsledky, vyber turnaj a svou divizi a zkopíruj adresu z prohlížeče.');
-    $t = $u['t']; $div = $u['d'];
+    $t = $u['t'];
     $ev = cadg_get("tournaments/$t/"); if (!is_array($ev) || empty($ev['name'])) throw new RuntimeException('Turnaj se nepodařilo načíst z ceskydiscgolf.cz (adresa nebo dostupnost webu).');
-    $lb = cadg_get("scoring/tournaments/$t/live-scoring/leaderboard/?division=$div");
-    if (!is_array($lb) || !$lb) throw new RuntimeException('V téhle divizi nejsou zatím žádné výsledky.');
-    $uid = (int)setting('cadg_user_id', '0'); $name = (string)setting('player_name', '');
-    $me = null; foreach ($lb as $p) if (cadg_is_me($p, $uid, $name)) { $me = $p; break; }
-    if (!$me) throw new RuntimeException('V téhle divizi jsem tě nenašel' . ($uid ? ' (ČADG id ' . $uid . ')' : ' – nastav si ČADG profil v Nastavení') . '. Zkopíruj odkaz z divize, ve které jsi hrál.');
+    $uid = (int)setting('cadg_user_id', '0'); if (!$uid) { try { $uid = cadg_find_user(); } catch (Throwable $e) {} }
+    $name = (string)setting('player_name', '');
+    $divs = []; foreach ((array)($ev['divisions'] ?? []) as $d) if (!empty($d['division'])) $divs[(string)$d['division']] = (string)($d['division_name'] ?? '');
+    if ($u['d']) { $divs = [$u['d'] => $divs[$u['d']] ?? ''] + $divs; }          // divize z odkazu první
+    if (!$divs) throw new RuntimeException('U turnaje nevidím žádné divize.');
+    $me = null; $div = null; $divName = ''; $lb = []; $seen = 0;
+    foreach ($divs as $dId => $dName) {
+        $l = cadg_get("scoring/tournaments/$t/live-scoring/leaderboard/?division=$dId"); if (!is_array($l) || !$l) continue;
+        $seen++;
+        foreach ($l as $p) if (cadg_is_me($p, $uid, $name)) { $me = $p; $div = $dId; $divName = $dName; $lb = $l; break 2; }
+    }
+    if (!$me) throw new RuntimeException($seen ? 'V žádné divizi turnaje jsem tě nenašel (hledám podle ' . ($uid ? 'ČADG id ' . $uid : 'jména „' . $name . '“ – nastav si ČADG profil v Nastavení') . ').' : 'V turnaji zatím nejsou žádné výsledky.');
     $act = cadg_get("scoring/tournaments/$t/live-scoring/round-activity/"); $rounds = [];
     foreach ((array)($act['rounds'] ?? []) as $r) $rounds[(int)$r['round_number']] = $r;
     $out = []; $tz = new DateTimeZone('Europe/Prague'); $dist = 0; $holesN = 0;
@@ -96,12 +102,13 @@ function cadg_import(string $url): array {
     }
     if (!$out) throw new RuntimeException('Máš tam zapsané výsledky, ale zatím žádné odehrané kolo.');
     $tied = count(array_filter($lb, fn($p) => (int)($p['place'] ?? 0) === (int)$me['place'])) > 1; $pl = (int)($me['place'] ?? 0);
-    $city = trim((string)($ev['city'] ?? '')); $lat = $lon = null;
+    $course = is_array($ev['course'] ?? null) ? $ev['course'] : [];
+    $city = trim((string)($course['city'] ?? $ev['city'] ?? '')); $lat = $lon = null;
     if (preg_match('/^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/', $city, $m)) { $lat = (float)$m[1]; $lon = (float)$m[2]; $city = ''; }
     return [
-        'pdga_id' => null, 'cadg_id' => $t, 'player' => (string)$me['player_name'], 'division' => (string)($me['division'] ?? ''),
+        'pdga_id' => null, 'cadg_id' => $t, 'player' => (string)$me['player_name'], 'division' => $divName ?: (string)($me['division'] ?? ''),
         'event' => ['name' => (string)$ev['name'], 'short' => mb_substr((string)$ev['name'], 0, 40), 'date' => $ev['start_date'] ?? null, 'end_date' => $ev['end_date'] ?? null,
-            'venue' => null, 'city' => $city ?: null, 'lat' => $lat, 'lon' => $lon, 'tier' => '', 'holes' => $holesN ?: 18, 'dist' => $dist ?: null, 'unit' => 'm',
+            'venue' => (string)($course['name'] ?? '') ?: null, 'city' => $city ?: null, 'lat' => $lat, 'lon' => $lon, 'tier' => '', 'holes' => $holesN ?: 18, 'dist' => $dist ?: null, 'unit' => 'm',
             'place' => $pl ? ($tied ? 'T' . $pl : $pl . '.') : null, 'pdga_rating' => null, 'event_rating' => !empty($me['event_rating']) ? (int)$me['event_rating'] : null,
             'is_pdga' => !empty($ev['is_pdga'])],
         'rounds' => $out,

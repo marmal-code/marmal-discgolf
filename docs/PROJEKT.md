@@ -46,6 +46,7 @@
 | v7 | Propojení s Moje Zdraví: stahování posilovny a putting cvičení (jen čtení), automatické odškrtnutí plánu, stránka Příprava a výsledky, karta Příprava u turnaje, nastavení propojení. Migrace 010 (`health_sessions`, `training_log.src`). Vyžaduje v15 Moje Zdraví (`api-export.php`). |
 | v8 | Import výsledků z Českého discgolfu (live scoring) včetně hodů po jamkách a statistik počítaných z hodů; karta „Hráčský profil“ na Přehledu (PDGA/iDG rating, čísla, členství, rozhodčí) se samoaktualizací ratingu z ceskydiscgolf.cz. Migrace 011 (`events.cadg_id`). Ověřeno na struktuře API z prohlížeče, z hostingu zatím ne. |
 | v9 | Záložka Cvičení: disc golfová cvičení (Zlatá zóna, Must-Make, Jednadvacet, Tlakový hrnec, Risk je zisk) zkopírovaná z Moje Zdraví, hraní, historie s datem, statistiky a grafy, napojení na plán (odškrtne putting) a na přípravu před turnaji; výsledky se posílají do Moje Zdraví, historie ze Zdraví se jednorázově načte. Menu má 7 položek. Migrace 012 (`drill_sessions`). Vyžaduje v16 Moje Zdraví. |
+| v10 | Oprava importu z ČADG: odkaz stačí z libovolné divize (nebo i bez divize) – aplikace projde všechny divize turnaje a najde tě v té, kde jsi hrál. Před importem si sama dohledá ČADG id. Místo konání se bere z hřiště turnaje. |
 
 ## Plán
 - v2: ruční zápis turnaje a kol formulářem, počasí a podmínky (automaticky + úprava), bag na turnaj, plán na turnaj
