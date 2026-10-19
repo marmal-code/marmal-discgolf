@@ -193,3 +193,7 @@ svg text{font-family:var(--font-b)}
 .phase{border-top:1px solid var(--line);padding:12px 0}.phase:first-of-type{border-top:0}.phase.cur{background:color-mix(in srgb,var(--t-bag) 7%,transparent);margin:0 -14px;padding:12px 14px;border-radius:12px}
 code{background:var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
 .linkgrid{display:flex;gap:8px;flex-wrap:wrap}
+.prep{display:block;padding:10px 0;border-top:1px solid var(--line)} .prep:first-of-type{border-top:0}
+.spark{display:flex;align-items:flex-end;gap:4px;height:42px;margin-top:8px}
+.spark i{flex:1;max-width:22px;background:var(--forest);border-radius:3px 3px 0 0;opacity:.85}
+.prep .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.prep .row .muted{white-space:nowrap}

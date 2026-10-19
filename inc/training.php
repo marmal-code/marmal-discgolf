@@ -12,7 +12,7 @@ function tr_plan(): ?array { return db()->query('SELECT * FROM training_plans WH
 /** Položky plánu pro konkrétní den + případný záznam. */
 function tr_day(string $date): array {
     $dow = (int)date('N', strtotime($date));
-    $q = db()->prepare('SELECT i.*, p.name AS phase_name, l.id AS log_id, l.status, l.reason, l.note AS log_note
+    $q = db()->prepare('SELECT i.*, p.name AS phase_name, l.id AS log_id, l.status, l.reason, l.note AS log_note, l.src AS log_src
         FROM training_items i
         JOIN training_phases p ON p.id = i.phase_id
         JOIN training_plans pl ON pl.id = p.plan_id AND pl.active = 1
@@ -35,7 +35,7 @@ function tr_set(string $date, int $itemId, string $status, ?string $reason, ?str
     if (!in_array($status, ['done', 'skip'], true)) return;
     if ($status === 'skip' && !isset(TR_REASONS[(string)$reason])) $reason = 'jine';
     db()->prepare('INSERT INTO training_log (tdate, item_id, status, reason, note, created) VALUES (?,?,?,?,?,?)
-        ON DUPLICATE KEY UPDATE status = VALUES(status), reason = VALUES(reason), note = VALUES(note)')
+        ON DUPLICATE KEY UPDATE status = VALUES(status), reason = VALUES(reason), note = VALUES(note), src = NULL')
         ->execute([$date, $itemId, $status, $status === 'skip' ? $reason : null, $note !== null && $note !== '' ? mb_substr($note, 0, 300) : null, now()]);
 }
 

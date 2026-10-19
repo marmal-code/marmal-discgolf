@@ -17,6 +17,7 @@
 - `import.php` + `inc/pdga.php` – import z PDGA Live (veřejné API `pdga.com/apps/tournament/live-api/`: `live_results_fetch_event.php`, `live_results_fetch_round.php`); z odkazu vyčte ID turnaje, hráče najde podle PDGA čísla (příp. jména, ignoruje diakritiku), preferuje divizi z Nastavení; ukládá kola (hody, par, skóre, rating kola, datum, výsledky po jamkách), umístění, rating, hřiště; opakovaný import turnaje (`events.pdga_id`) jen aktualizuje. Statistiky kola se berou z `https://www.pdga.com/api/v1/feat/stats/round-stats/{live_round_id}` (`live_round_id` je v odpovědi `live_results_fetch_round.php`; hráč se páruje přes `score.resultId` = `ResultID`). statId: 1 Fairway, 2 C1R, 3 C2R, 4 Parked, 5 Scramble, 6 C1 putting, 7 C1X, 8 C2 putting, 16 celk. putt, 17 nejdelší throw-in, 18 průměrný putt, 21 OB; strokes gained: `/feat/stats/strokes-gained/{id}` (zatím se nestahuje). Vzdálenosti API dává ve stopách, ukládají se v jednotce turnaje. Lokální test: env `DG_HTTP_MOCK_DIR` = složka s JSON odpověďmi (viz `http_json()`).
 - `trenink.php` (týdenní přehled, odškrtávání Splněno / Nesplněno s důvodem nemoc·zranění·jiné + poznámka, vlastní trénink, grafy posledních 8 týdnů), `trenink-plan.php` (aktivní plán po fázích, úprava, import plánu z textu s náhledem, archiv), `inc/training.php`; na Přehledu karta „Dnešní trénink“ a „Odkazy“ (spravují se v Nastavení → Odkazy)
 - Formát importu plánu: `# Název plánu`, `## Fáze | od | do` (+ řádek popisu), `- dny | název | minuty | popis` (dny: denně, po-pá, út,pá). Dny bez záznamu v minulosti se ukazují jako „Bez záznamu“.
+- `inc/health.php`, `priprava.php` – propojení s Moje Zdraví: `api-export.php` (jen čtení, token = `api_token` z Moje Zdraví) vrací dokončené tréninky v posilovně a putting cvičení; stahuje se do `health_sessions` (jednou za hodinu při otevření Přehledu / Tréninku / Přípravy, nebo tlačítkem v Nastavení → Moje Zdraví; `settings`: `health_url`, `health_token`, `health_last`, `health_err`). Cvičení z Moje Zdraví se samo odškrtne v plánu (posilovna → položka typu gym, putting cvičení → putting), jen pokud ten den ještě není ruční záznam; `training_log.src='zdravi'`, `health_sessions.marked` brání opětovnému odškrtnutí po ručním vrácení. `priprava.php`: turnaje s přípravou 4 týdny předem (počet tréninků, plnění plánu) vedle výsledků (rating kola, C1X, C2), měsíční přehled, pokrok cvičení; karta „Příprava“ i na `turnaj.php`.
 - `assets/sale.js` – výběr disků a filtr na veřejné stránce
 - `setup.php` první spuštění (účet → QR → záložní kódy → passkey) · `login.php`, `logout.php`, `passkey.php`
 - `update.php` + `inc/updater.php` aktualizace z GitHubu (zipball přes API s read-only tokenem), pak `migrate()`
@@ -24,7 +25,7 @@
 - `seed/` jednorázová data (disky z původního bag.marmal.cz, statistiky 2026) · `lib/WebAuthn` (lbuchs/WebAuthn, MIT)
 
 ## Databáze
-`settings, users, passkeys, login_attempts, discs, inquiries, inquiry_items, push_subs, events, rounds, event_discs, event_todo, rating_history, training_plans, training_phases, training_items, training_log, links, migrations`
+`settings, users, passkeys, login_attempts, discs, inquiries, inquiry_items, push_subs, events, rounds, event_discs, event_todo, rating_history, training_plans, training_phases, training_items, training_log, links, health_sessions, migrations`
 
 ## Aktualizace tlačítkem
 `config.php` → `github.token` (fine‑grained token, jen Contents: Read‑only pro tento repozitář). Nastavení → „Aktualizovat aplikaci“: stáhne větev `main`, přepíše soubory (kromě `config.php`, `uploads/`), spustí nové migrace.
@@ -40,8 +41,8 @@
 | v5 | Import z PDGA Live stahuje i statistiky kola (fairway, C1R, C2R, scramble, C1X, C2 putting, OB, průměrný a nejdelší putt); neúspěch stahování statistik import nezastaví; ručně zadané hodnoty se nepřepisují prázdnými. |
 | v5.1 | Oprava barev ve statistikách turnaje: porovnání už není jen s ostatními koly stejné sezóny (u sezóny s jediným turnajem se obě kola porovnávala mezi sebou), ale s průměrem tvých ostatních PDGA kol z 12 měsíců před turnajem (min. 8 kol), jinak ze všech ostatních turnajů; málo dat = bez barev; statistiky z <3 pokusů se nebarví. |
 | v6 | Trénink: plán po fázích (předvyplněn „Plán do března 2027“), odškrtávání Splněno / Nesplněno s důvodem, vlastní trénink, import celého plánu z textu, karta „Dnešní trénink“ na Přehledu. Odkazy na weby (Tagovačka, Kladno, PDGA profil, IDG) na Přehledu + správa v Nastavení. 6. položka navigace. Migrace 008 (tabulky `training_*`, `links`), 009 (ukázkový plán). |
+| v7 | Propojení s Moje Zdraví: stahování posilovny a putting cvičení (jen čtení), automatické odškrtnutí plánu, stránka Příprava a výsledky, karta Příprava u turnaje, nastavení propojení. Migrace 010 (`health_sessions`, `training_log.src`). Vyžaduje v15 Moje Zdraví (`api-export.php`). |
 
 ## Plán
 - v2: ruční zápis turnaje a kol formulářem, počasí a podmínky (automaticky + úprava), bag na turnaj, plán na turnaj
 - import ČADG / ne-PDGA turnajů (potřeba vzorový odkaz), strokes gained z PDGA
-- cvičení z Moje Zdraví, propojení tréninku s výsledky

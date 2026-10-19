@@ -12,6 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (['sale_title', 'sale_intro', 'sale_contact', 'notify_email'] as $k) set_setting($k, trim((string)($_POST[$k] ?? '')));
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
+    if ($a === 'health_save') {
+        $url = trim((string)($_POST['health_url'] ?? ''));
+        if ($url !== '' && !preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
+        if ($url === '' || (filter_var($url, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $url))) set_setting('health_url', mb_substr($url, 0, 300)); else flash('Adresa není platná.', 'err');
+        if (trim((string)($_POST['health_token'] ?? '')) !== '') set_setting('health_token', mb_substr(trim((string)$_POST['health_token']), 0, 100));
+        if (isset($_POST['health_clear'])) { set_setting('health_token', ''); set_setting('health_url', ''); }
+        flash('Propojení uloženo.'); redirect('nastaveni.php#zdravi');
+    }
+    if ($a === 'health_sync') {
+        require_once __DIR__ . '/inc/health.php'; $r = health_sync(); flash($r['msg'], $r['ok'] ? 'ok' : 'err'); redirect('nastaveni.php#zdravi');
+    }
     if ($a === 'link_add') {
         $t = mb_substr(trim((string)($_POST['title'] ?? '')), 0, 80); $u = trim((string)($_POST['url'] ?? ''));
         if ($u !== '' && !preg_match('#^https?://#i', $u)) $u = 'https://' . $u;
@@ -94,6 +105,21 @@ page_start('Nastavení', 'nastaveni.php');
   <p class="muted" id="pushmsg" style="margin-bottom:0"></p>
   <?php $subs = db()->query('SELECT id, name, created FROM push_subs ORDER BY id')->fetchAll(); if ($subs): ?>
   <ul class="sellist" style="margin-top:10px"><?php foreach ($subs as $s) echo '<li><span>' . h($s['name']) . ' <span class="muted">· od ' . h(date('j. n. Y', strtotime($s['created']))) . '</span></span><button class="btn sm danger" type="button" data-pushrm="' . (int)$s['id'] . '">Odebrat</button></li>'; ?></ul>
+  <?php endif; ?>
+</section>
+
+<section class="card" id="zdravi">
+  <h2>Moje Zdraví</h2>
+  <p class="sub" style="margin-top:0">Stahuje posilovnu a putting cvičení z aplikace Moje Zdraví (jen čtení). Splněné tréninky se samy odškrtnou v plánu a ukážou se u příprav na turnaj.</p>
+  <form method="post"><?= csrf_field() ?><input type="hidden" name="a" value="health_save">
+    <label>Adresa exportu<input type="text" name="health_url" value="<?= h((string)setting('health_url', '')) ?>" placeholder="https://zdravi.marmal.cz/api-export.php"></label>
+    <label>Klíč (z Moje Zdraví → Profil → Kroky)<input type="password" name="health_token" autocomplete="off" placeholder="<?= setting('health_token', '') ? '•••• uložen (nech prázdné, pokud neměníš)' : 'vlož klíč' ?>"></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Uložit</button><?php if (setting('health_url', '')): ?><button class="btn ghost" name="health_clear" value="1" onclick="return confirm('Odpojit Moje Zdraví?')">Odpojit</button><?php endif; ?></div>
+  </form>
+  <?php if (setting('health_url', '') && setting('health_token', '')): ?>
+    <form method="post" style="margin-top:10px"><?= csrf_field() ?><input type="hidden" name="a" value="health_sync"><button class="btn ghost">Synchronizovat teď</button>
+      <span class="muted"> Naposledy: <?= setting('health_last', '') ? h(date('j. n. H:i', strtotime((string)setting('health_last')))) : 'nikdy' ?></span></form>
+    <?php if (setting('health_err', '')): ?><p class="sub" style="color:var(--bad)"><?= h((string)setting('health_err')) ?></p><?php endif; ?>
   <?php endif; ?>
 </section>
 

@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/inc/layout.php';
 require __DIR__ . '/inc/discs.php';
 require_once __DIR__ . '/inc/events.php';
+require_once __DIR__ . '/inc/health.php';
 migrate_if_needed();
 require_login();
 
@@ -95,6 +96,16 @@ page_start($e ? $e['name'] : 'Nový turnaj', 'turnaje.php');
   <div id="wxout" class="muted" style="margin-top:10px"></div>
 </section>
 
+<?php if ($e && $e['date']): $future = $e['date'] > date('Y-m-d'); $pp = health_prep($future ? date('Y-m-d', strtotime('+1 day')) : (string)$e['date']); ?>
+<section class="card" id="priprava">
+  <h2 style="margin-top:0">Příprava <small class="muted" style="font-weight:500"><?= $future ? 'poslední 4 týdny' : '4 týdny před turnajem' ?></small></h2>
+  <?php if ($pp['has'] || $pp['planned']): ?>
+    <div class="pills"><span class="pill">Posilovna <?= $pp['gym'] ?>×</span><span class="pill">Putting cvičení <?= $pp['drill'] ?>×<?= $pp['drill_min'] ? ' · ' . $pp['drill_min'] . ' min' : '' ?></span><?= $pp['pct'] !== null ? '<span class="pill ' . ($pp['pct'] >= 70 ? 'g' : ($pp['pct'] < 40 ? 'b' : '')) . '">Plán splněn ' . $pp['pct'] . ' %</span>' : '' ?><?= $pp['skip'] ? '<span class="pill b">Vynecháno ' . $pp['skip'] . '×</span>' : '' ?></div>
+  <?php else: ?><p class="sub" style="margin:0">Z tohoto období nemám data o tréninku.</p><?php endif; ?>
+  <p class="sub" style="margin:8px 0 0"><a href="priprava.php">Příprava a výsledky ve všech turnajích →</a></p>
+</section>
+
+<?php endif; ?>
 <section class="card" id="plan">
   <h2 style="margin-top:0">Co zařídit</h2>
   <?php foreach ($todos as $t): ?>

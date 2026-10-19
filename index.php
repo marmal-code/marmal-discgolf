@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/inc/layout.php';
 require_once __DIR__ . '/inc/training.php';
+require_once __DIR__ . '/inc/health.php';
 migrate_if_needed();
 require_login();
 
@@ -14,6 +15,7 @@ $inq = (int)db()->query('SELECT COUNT(*) FROM inquiries WHERE handled = 0')->fet
 $seasonEv = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y'))->fetchColumn();
 $wins = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y') . ' AND place = "1."')->fetchColumn();
 
+health_sync_maybe();
 $todayItems = tr_plan() ? tr_day(date('Y-m-d')) : [];
 $links = db()->query('SELECT * FROM links ORDER BY sort, id')->fetchAll();
 page_start('Přehled', 'index.php');
