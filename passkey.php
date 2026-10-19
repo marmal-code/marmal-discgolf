@@ -32,7 +32,7 @@ try {
         out(['ok' => true]);
     }
     // přihlášení otiskem
-    if ($a === 'login_args') {
+    if ($a === 'login_args' || $a === 'unlock_args') {
         if (throttled()) out(['error' => 'throttled'], 429);
         $ids = db()->query('SELECT cred_id FROM passkeys')->fetchAll(PDO::FETCH_COLUMN);
         if (!$ids) out(['error' => 'none'], 404);
@@ -50,8 +50,19 @@ try {
         login_user((int)$k['user_id']);
         out(['ok' => true]);
     }
+    // odemčení při spuštění aplikace (už přihlášený): ověří otisk, nepřihlašuje znovu
+    if ($a === 'unlock_verify') {
+        $u = current_user(); if (!$u) out(['error' => 'auth'], 401);
+        if (throttled()) out(['error' => 'throttled'], 429);
+        $st = db()->prepare('SELECT * FROM passkeys WHERE cred_id = ? AND user_id = ?'); $st->execute([base64_encode(bin($in['id'] ?? '')), $u['id']]);
+        $k = $st->fetch(); if (!$k) { failed_attempt(); out(['error' => 'unknown'], 403); }
+        $wa->processGet(bin($in['clientDataJSON'] ?? ''), bin($in['authenticatorData'] ?? ''), bin($in['signature'] ?? ''), $k['public_key'], bin($_SESSION['pk_challenge'] ?? ''), (int)$k['sign_count'], true, true);
+        db()->prepare('UPDATE passkeys SET sign_count = ?, last_used = ? WHERE id = ?')->execute([max((int)$wa->getSignatureCounter(), (int)$k['sign_count']), now(), $k['id']]);
+        $_SESSION['unlocked_at'] = time();
+        out(['ok' => true]);
+    }
     out(['error' => 'bad action'], 400);
 } catch (Throwable $e) {
-    if ($a === 'login_verify') failed_attempt();
+    if ($a === 'login_verify' || $a === 'unlock_verify') failed_attempt();
     out(['error' => 'webauthn', 'message' => $e->getMessage()], 400);
 }

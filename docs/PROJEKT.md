@@ -49,6 +49,7 @@
 | v10 | Oprava importu z ČADG: odkaz stačí z libovolné divize (nebo i bez divize) – aplikace projde všechny divize turnaje a najde tě v té, kde jsi hrál. Před importem si sama dohledá ČADG id. Místo konání se bere z hřiště turnaje. |
 | v11 | Pevné nastavení hráče (Martin Malý, ČADG číslo 2914 → interní id 1930, PDGA 113434; migrace 013). V Nastavení se zadává ČADG číslo, id se ověří podle `old_id`, špatné číslo se nepřijme. Profil na Přehledu přepracován podle ČADG (foto, klub, město, stát, členství, bloky ČADG a PDGA, historie členství). |
 | v12 | Vizuální přepracování: sportovní barevný vzhled (gradienty, zaoblené karty, stíny), světlý režim jako výchozí + přepínač světlý/tmavý v liště (uloženo v prohlížeči), Dashboard jako bento mřížka na více sloupců s grafem ratingu a kroužkem k cíli, položka „Přehled“ z menu zrušena (úvodní stránka přes logo), tlačítko „Import výsledků“, seznamy turnajů ve dvou sloupcích na PC. |
+| v13 | Mobil: karty disků ve dvou sloupcích (menší písmo i obrázky), mezera mezi kartami na dashboardu, přetékající pole s datem. Zámek otiskem: na mobilu s registrovaným otiskem se při každém spuštění (a po 5 min na pozadí) zobrazí `odemknout.php` (WebAuthn s ověřením uživatele), vypnutí v Nastavení (`lock_on`). Zámek hlídá klient (sessionStorage), session cookie zůstává platná. |
 
 ## Plán
 - v2: ruční zápis turnaje a kol formulářem, počasí a podmínky (automaticky + úprava), bag na turnaj, plán na turnaj

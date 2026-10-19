@@ -18,6 +18,14 @@ const NAV = [
     'nastaveni.php' => ['Nastavení', 'cog'],
 ];
 
+/** Zámek při spuštění na mobilu: když je v aplikaci registrovaný otisk a zámek je zapnutý, každé spuštění (a návrat po 5 min) vyžaduje odemčení otiskem. */
+function lock_gate(): string {
+    try { if (setting('lock_on', '1') !== '1' || (int)db()->query('SELECT COUNT(*) FROM passkeys')->fetchColumn() < 1) return ''; } catch (Throwable $e) { return ''; }
+    return '<script>(function(){try{if(!window.matchMedia("(pointer:coarse)").matches)return;var n=Date.now(),s=+localStorage.getItem("dgseen")||0;'
+         . 'if(sessionStorage.getItem("dgun")==="1"&&n-s<300000){localStorage.setItem("dgseen",n);return}sessionStorage.removeItem("dgun");'
+         . 'document.documentElement.style.visibility="hidden";location.replace("odemknout.php?next="+encodeURIComponent(location.pathname.split("/").pop()+location.search))}catch(e){}})();</script>';
+}
+
 function page_start(string $title, string $active = ''): void {
     $f = flash();
     echo '<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
@@ -26,7 +34,7 @@ function page_start(string $title, string $active = ''): void {
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icon-192.png">'
        . '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
        . '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter+Tight:wght@400;500;600&display=swap">'
-       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"><script>try{if(localStorage.getItem("dgtheme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script></head><body><div class="wrap">'
+       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '">' . lock_gate() . '<script>try{if(localStorage.getItem("dgtheme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script></head><body><div class="wrap">'
        . '<div class="topbar"><a class="brand" href="index.php"><i></i>Discgolf</a><nav class="dnav">';
     foreach (NAV as $href => [$label]) echo '<a href="' . $href . '"' . ($active === $href ? ' class="on"' : '') . '>' . h($label) . '</a>';
     echo '</nav><button type="button" class="themebtn" id="themebtn" aria-label="Přepnout světlý / tmavý režim" title="Světlý / tmavý režim"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20 14A8 8 0 0110 4a8 8 0 1010 10z"/></svg></button></div><div class="page' . ($active === 'index.php' ? ' dash-page' : '') . '">';

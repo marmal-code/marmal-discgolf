@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('nastaveni.php');
     }
     if ($a === 'del_key') { db()->prepare('DELETE FROM passkeys WHERE id = ? AND user_id = ?')->execute([(int)$_POST['id'], $u['id']]); flash('Klíč odstraněn.'); redirect('nastaveni.php'); }
+    if ($a === 'lock') { set_setting('lock_on', !empty($_POST['lock_on']) ? '1' : '0'); flash('Zámek aplikace uložen.'); redirect('nastaveni.php#zamek'); }
     if ($a === 'codes') { $codes = gen_recovery_codes((int)$u['id']); }
 }
 $keys = db()->prepare('SELECT * FROM passkeys WHERE user_id = ? ORDER BY id'); $keys->execute([$u['id']]); $keys = $keys->fetchAll();
@@ -80,6 +81,7 @@ page_start('Nastavení', 'nastaveni.php');
     <form method="post" class="kv" data-confirm="Odstranit tento klíč?"><?= csrf_field() ?><input type="hidden" name="a" value="del_key"><input type="hidden" name="id" value="<?= (int)$k['id'] ?>">
       <span><?= h($k['name']) ?> <span class="muted">· <?= h(date('j. n. Y', strtotime($k['created']))) ?></span></span><button class="btn sm danger">Odebrat</button></form>
   <?php endforeach; if (!$keys) echo '<p class="muted">Zatím žádný.</p>'; ?>
+  <form method="post" id="zamek" style="margin:10px 0"><?= csrf_field() ?><input type="hidden" name="a" value="lock"><label class="check"><input type="checkbox" name="lock_on" value="1" <?= setting('lock_on', '1') === '1' ? 'checked' : '' ?> onchange="this.form.submit()"> Na mobilu vyžadovat otisk prstu při každém spuštění (a po 5 min na pozadí)</label></form>
   <button class="btn ghost" id="addkey" type="button" data-csrf="<?= h(csrf()) ?>">Přidat toto zařízení</button> <span class="muted" id="keymsg"></span>
   <script>document.body.dataset.reload = '1';</script>
   <form method="post" style="margin-top:14px"><?= csrf_field() ?><input type="hidden" name="a" value="codes"><button class="btn ghost sm">Vygenerovat nové záložní kódy</button></form>

@@ -1,4 +1,14 @@
 (function () {
+  // zámek: čas poslední aktivity; po návratu po >5 min se vyžádá otisk znovu
+  try {
+    var seen = function () { localStorage.setItem('dgseen', String(Date.now())); };
+    if (sessionStorage.getItem('dgun') === '1') { seen(); setInterval(function () { if (!document.hidden) seen(); }, 20000); }
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { if (sessionStorage.getItem('dgun') === '1') seen(); return; }
+      var s = +localStorage.getItem('dgseen') || 0;
+      if (sessionStorage.getItem('dgun') === '1' && Date.now() - s > 300000) { sessionStorage.removeItem('dgun'); location.reload(); }
+    });
+  } catch (e) {}
   // přepínač světlý / tmavý režim (výchozí je světlý)
   var tb = document.getElementById('themebtn');
   if (tb) tb.addEventListener('click', function () {

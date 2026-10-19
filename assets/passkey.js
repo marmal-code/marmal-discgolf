@@ -45,4 +45,24 @@
       location.href = 'index.php';
     }).catch(function (e) { msg('Přihlášení se nepovedlo: ' + (e.message || e), true); });
   });
+
+  var ul = document.getElementById('pkunlock');
+  if (ul) {
+    var run = function () {
+      if (!window.PublicKeyCredential) return msg('Tenhle prohlížeč otisk prstu nepodporuje.', true);
+      var csrf = ul.dataset.csrf; msg('Čekám na otisk…');
+      post('unlock_args', csrf).then(function (r) {
+        if (r.error) throw new Error(r.error);
+        walk(r.args); return navigator.credentials.get(r.args);
+      }).then(function (c) {
+        return post('unlock_verify', csrf, { id: b64(c.rawId), clientDataJSON: b64(c.response.clientDataJSON), authenticatorData: b64(c.response.authenticatorData), signature: b64(c.response.signature) });
+      }).then(function (r) {
+        if (r.error) throw new Error(r.message || r.error);
+        try { sessionStorage.setItem('dgun', '1'); localStorage.setItem('dgseen', String(Date.now())); } catch (e) {}
+        location.replace(ul.dataset.next || 'index.php');
+      }).catch(function (e) { msg('Nepovedlo se, zkus to znovu. (' + (e.message || e) + ')', true); });
+    };
+    ul.addEventListener('click', run);
+    setTimeout(run, 300);
+  }
 })();

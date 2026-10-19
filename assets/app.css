@@ -294,3 +294,24 @@ body{background:var(--bg)}
   .pftwo{gap:14px}
 }
 @media (min-width:1400px){.wrap{padding-inline:8px}}
+
+/* ===== v13: mobil ===== */
+.c-side{display:grid;gap:16px}
+@media (max-width:759px){
+  .disc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .disc{border-width:1.5px;border-radius:12px}
+  .disc .b{padding:7px 8px 8px;gap:4px}
+  .disc .nm{font-size:13px}.disc .br{font-size:10.5px;line-height:1.25}
+  .flight{gap:3px;font-size:11px}.flight span{min-width:0;flex:1;padding:1px 0}
+  .tg{font-size:10px;padding:3px 7px}.bd{gap:3px}
+  .price{font-size:14px}
+  .quick{flex-wrap:wrap;gap:4px}.quick .btn.sm{padding:4px 8px;min-height:28px;font-size:11.5px}
+  .pickbtn span{padding:6px 6px;font-size:12px}
+  .duo{gap:10px}
+}
+.row2>*{min-width:0}input[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none}
+@media (max-width:759px){.disc .ph-img{aspect-ratio:4/3}}
+.lockscr{min-height:70vh;display:grid;place-items:center;text-align:center;gap:14px;align-content:center;padding:24px 0}
+.lockscr .fp{width:96px;height:96px;border-radius:50%;background:var(--grad);display:grid;place-items:center;box-shadow:0 10px 30px rgba(47,208,123,.4)}
+.lockscr .fp svg{width:52px;height:52px;stroke:var(--accent-ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.lockscr h1{font:800 28px var(--font-d);margin:6px 0 0}
