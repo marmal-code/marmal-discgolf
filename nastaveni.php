@@ -12,6 +12,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (['sale_title', 'sale_intro', 'sale_contact', 'notify_email'] as $k) set_setting($k, trim((string)($_POST[$k] ?? '')));
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
+    if ($a === 'link_add') {
+        $t = mb_substr(trim((string)($_POST['title'] ?? '')), 0, 80); $u = trim((string)($_POST['url'] ?? ''));
+        if ($u !== '' && !preg_match('#^https?://#i', $u)) $u = 'https://' . $u;
+        if ($t !== '' && filter_var($u, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $u)) { db()->prepare('INSERT INTO links (title, url, sort) VALUES (?,?,?)')->execute([$t, mb_substr($u, 0, 500), (int)db()->query('SELECT COALESCE(MAX(sort),0)+1 FROM links')->fetchColumn()]); flash('Odkaz přidán.'); }
+        else flash('Vyplň název a platnou adresu odkazu.', 'err');
+        redirect('nastaveni.php#odkazy');
+    }
+    if ($a === 'link_del') { db()->prepare('DELETE FROM links WHERE id = ?')->execute([(int)($_POST['id'] ?? 0)]); redirect('nastaveni.php#odkazy'); }
+    if ($a === 'link_move') {
+        $ids = db()->query('SELECT id FROM links ORDER BY sort, id')->fetchAll(PDO::FETCH_COLUMN); $i = array_search((int)($_POST['id'] ?? 0), array_map('intval', $ids), true); $d = ($_POST['dir'] ?? '') === 'up' ? -1 : 1;
+        if ($i !== false && isset($ids[$i + $d])) { [$ids[$i], $ids[$i + $d]] = [$ids[$i + $d], $ids[$i]]; $u = db()->prepare('UPDATE links SET sort = ? WHERE id = ?'); foreach ($ids as $k => $lid) $u->execute([$k + 1, $lid]); }
+        redirect('nastaveni.php#odkazy');
+    }
     if ($a === 'hrac') {
         set_setting('player_name', trim((string)($_POST['player_name'] ?? '')) ?: 'Hráč'); set_setting('player_pdga', (string)(int)preg_replace('/\D+/', '', (string)($_POST['player_pdga'] ?? ''))); set_setting('rating_goal', (string)(int)($_POST['rating_goal'] ?? 980)); set_setting('player_division', mb_substr(trim((string)($_POST['player_division'] ?? '')), 0, 20) ?: 'MP40');
         flash('Profil uložen.'); redirect('nastaveni.php');
@@ -82,6 +95,17 @@ page_start('Nastavení', 'nastaveni.php');
   <?php $subs = db()->query('SELECT id, name, created FROM push_subs ORDER BY id')->fetchAll(); if ($subs): ?>
   <ul class="sellist" style="margin-top:10px"><?php foreach ($subs as $s) echo '<li><span>' . h($s['name']) . ' <span class="muted">· od ' . h(date('j. n. Y', strtotime($s['created']))) . '</span></span><button class="btn sm danger" type="button" data-pushrm="' . (int)$s['id'] . '">Odebrat</button></li>'; ?></ul>
   <?php endif; ?>
+</section>
+
+<section class="card" id="odkazy">
+  <h2>Odkazy na Přehledu</h2>
+  <?php foreach (db()->query('SELECT * FROM links ORDER BY sort, id')->fetchAll() as $l): ?>
+    <form method="post" style="display:flex;gap:6px;align-items:center;margin:0 0 6px"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$l['id'] ?>">
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis"><b><?= h($l['title']) ?></b> <span class="muted"><?= h($l['url']) ?></span></span>
+      <button class="btn sm ghost" name="a" value="link_move" onclick="this.form.dir.value='up'" aria-label="Nahoru">↑</button><button class="btn sm ghost" name="a" value="link_move" onclick="this.form.dir.value='down'" aria-label="Dolů">↓</button><input type="hidden" name="dir" value="">
+      <button class="btn sm danger" name="a" value="link_del" aria-label="Smazat">×</button></form>
+  <?php endforeach; ?>
+  <form method="post" class="row2" style="margin-top:10px"><?= csrf_field() ?><input type="hidden" name="a" value="link_add"><input type="text" name="title" maxlength="80" placeholder="Název" required><input type="text" name="url" placeholder="https://…" required><button class="btn">Přidat</button></form>
 </section>
 
 <section class="card">

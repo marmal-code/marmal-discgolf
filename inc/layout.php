@@ -9,10 +9,11 @@ const ICONS = [
     'bag'   => '<path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8a3 3 0 016 0"/>',
     'chart' => '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
     'trophy'=> '<path d="M8 4h8v6a4 4 0 01-8 0V4z"/><path d="M8 6H4v2a3 3 0 003 3M16 6h4v2a3 3 0 01-3 3M12 14v4M8 20h8"/>',
+    'timer' => '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/>',
     'cog'   => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
 ];
 const NAV = [
-    'index.php' => ['Přehled', 'home'], 'bag.php' => ['Bag', 'bag'], 'turnaje.php' => ['Turnaje', 'trophy'], 'statistiky.php' => ['Statistiky', 'chart'],
+    'index.php' => ['Přehled', 'home'], 'bag.php' => ['Bag', 'bag'], 'turnaje.php' => ['Turnaje', 'trophy'], 'trenink.php' => ['Trénink', 'timer'], 'statistiky.php' => ['Statistiky', 'chart'],
     'nastaveni.php' => ['Nastavení', 'cog'],
 ];
 

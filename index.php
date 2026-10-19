@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/inc/layout.php';
+require_once __DIR__ . '/inc/training.php';
 migrate_if_needed();
 require_login();
 
@@ -13,6 +14,8 @@ $inq = (int)db()->query('SELECT COUNT(*) FROM inquiries WHERE handled = 0')->fet
 $seasonEv = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y'))->fetchColumn();
 $wins = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y') . ' AND place = "1."')->fetchColumn();
 
+$todayItems = tr_plan() ? tr_day(date('Y-m-d')) : [];
+$links = db()->query('SELECT * FROM links ORDER BY sort, id')->fetchAll();
 page_start('Přehled', 'index.php');
 ?>
 <div class="ph">Přehled <small><?= h(date('j. n. Y')) ?></small></div>
@@ -30,4 +33,20 @@ page_start('Přehled', 'index.php');
   <a class="card" href="bag.php" style="color:inherit;text-decoration:none"><h3>Bag</h3><b style="font:700 22px var(--font-d)"><?= (int)$cnt['total'] ?> disků</b><div class="sub"><?= (int)$cnt['bag'] ?> v bagu · <?= (int)$cnt['sale'] ?> na prodej</div></a>
   <a class="card" href="poptavky.php" style="color:inherit;text-decoration:none"><h3>Poptávky z prodeje</h3><b style="font:700 22px var(--font-d)"><?= $inq ?> nových</b><div class="sub">z veřejné stránky prodeje</div></a>
 </div>
+<?php if ($todayItems): ?>
+<section class="card trday today" style="margin-top:16px">
+  <h3 style="margin:0 0 8px"><a href="trenink.php" style="color:inherit;text-decoration:none">Dnešní trénink →</a></h3>
+  <?php foreach ($todayItems as $it): $st = $it['status']; ?>
+    <div class="trrow k-<?= h($it['kind']) ?> st-<?= $st ?: 'open' ?>"><div class="trmain"><div class="trt"><span class="kd"></span><b><?= h($it['title']) ?></b><?= $it['minutes'] ? ' <span class="muted">' . (int)$it['minutes'] . ' min</span>' : '' ?></div>
+      <?php if ($st === 'skip') echo '<div class="sub" style="color:var(--bad)">Vynecháno – ' . h(TR_REASONS[$it['reason'] ?: 'jine']) . '</div>'; ?></div>
+      <div class="trctl"><form method="post" action="trenink.php"><?= csrf_field() ?><input type="hidden" name="date" value="<?= date('Y-m-d') ?>"><input type="hidden" name="item" value="<?= (int)$it['id'] ?>"><input type="hidden" name="ret" value="index.php">
+        <?php if ($st) echo '<button class="btn sm ghost" name="a" value="undo">' . ($st === 'done' ? '✓ Splněno' : 'Vrátit') . '</button>'; else echo '<button class="btn sm" name="a" value="done">Splněno</button>'; ?></form></div></div>
+  <?php endforeach; ?>
+</section>
+<?php endif; ?>
+<?php if ($links): ?>
+<section class="card" style="margin-top:16px"><h3 style="margin:0 0 10px">Odkazy</h3>
+  <div class="linkgrid"><?php foreach ($links as $l) echo '<a class="btn ghost" href="' . h($l['url']) . '" target="_blank" rel="noopener noreferrer">' . h($l['title']) . ' ↗</a>'; ?></div>
+</section>
+<?php endif; ?>
 <?php page_end('index.php');
