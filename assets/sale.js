@@ -9,7 +9,7 @@
     var s = sel(), sum = s.reduce(function (a, c) { return a + (+c.dataset.price || 0); }, 0);
     cards.forEach(function (c) { c.classList.toggle('sel', c.querySelector('input').checked); });
     document.getElementById('selcnt').textContent = s.length;
-    document.getElementById('selsum').textContent = sum ? ' · ' + sum.toLocaleString('cs-CZ') + ' Kč' : '';
+    document.getElementById('selsum').textContent = sum.toLocaleString('cs-CZ') + ' Kč'; var mt = document.getElementById('modtotal'); if (mt) mt.textContent = sum.toLocaleString('cs-CZ') + ' Kč' + (s.some(function (c) { return !+c.dataset.price; }) ? ' + dohodou' : '');
     bar.classList.toggle('on', s.length > 0);
   }
   function filter() {

@@ -12,7 +12,7 @@ const ICONS = [
     'cog'   => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
 ];
 const NAV = [
-    'index.php' => ['Přehled', 'home'], 'bag.php' => ['Bag', 'bag'], 'statistiky.php' => ['Statistiky', 'chart'],
+    'index.php' => ['Přehled', 'home'], 'bag.php' => ['Bag', 'bag'], 'turnaje.php' => ['Turnaje', 'trophy'], 'statistiky.php' => ['Statistiky', 'chart'],
     'nastaveni.php' => ['Nastavení', 'cog'],
 ];
 

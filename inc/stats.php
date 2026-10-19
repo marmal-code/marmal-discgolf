@@ -13,7 +13,7 @@ function stats_data(): array {
         'ratingHistory' => array_map(fn($r) => [$r['d'], (int)$r['rating'], (int)$r['rounds_used']], $hist),
         'years' => [],
     ];
-    $events = $pdo->query('SELECT * FROM events ORDER BY year, date, id')->fetchAll();
+    $events = $pdo->query('SELECT * FROM events WHERE status = "done" ORDER BY year, date, id')->fetchAll();
     $rs = $pdo->prepare('SELECT * FROM rounds WHERE event_id = ? ORDER BY idx');
     foreach ($events as $i => $e) {
         $y = (string)$e['year'];

@@ -76,11 +76,12 @@ public_start($title);
 <?php endforeach; ?>
 </div>
 <?php endif; ?>
-<div class="selbar" id="selbar"><span><b id="selcnt">0</b> vybráno<span id="selsum" class="muted"></span></span><button type="button" class="btn" id="selgo">Odeslat zájem</button></div>
+<div class="selbar" id="selbar"><span><b id="selcnt">0</b> vybráno · <b>celkem <span id="selsum">0 Kč</span></b></span><button type="button" class="btn" id="selgo">Odeslat zájem</button></div>
 <div class="modal" id="inq" role="dialog" aria-modal="true" aria-labelledby="inqt">
   <div class="sheet"><?= csrf_field() ?><input type="hidden" name="a" value="inquiry">
     <h2 id="inqt">Odeslat zájem</h2>
     <ul class="sellist" id="sellist"></ul>
+    <div class="seltotal"><span>Celkem</span><b id="modtotal">0 Kč</b></div>
     <div class="field"><label>Jméno</label><input type="text" name="name" required maxlength="100" autocomplete="name"></div>
     <div class="field"><label>Telefon nebo e‑mail</label><input type="text" name="contact" required maxlength="150" autocomplete="email"></div>
     <div class="field"><label>Zpráva (nepovinné)</label><textarea name="message" maxlength="1500" placeholder="Např. kde bys chtěl převzít…"></textarea></div>
