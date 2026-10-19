@@ -1,0 +1,9 @@
+Options -Indexes
+<FilesMatch "^(config(\.sample)?\.php|\.gitignore)$">
+    Require all denied
+</FilesMatch>
+RedirectMatch 404 ^/(\.git|inc|lib|migrations|seed|docs)(/|$)
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>

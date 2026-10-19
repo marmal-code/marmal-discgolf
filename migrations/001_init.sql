@@ -1,0 +1,119 @@
+CREATE TABLE IF NOT EXISTS settings (
+  skey VARCHAR(60) PRIMARY KEY,
+  sval TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(60) NOT NULL UNIQUE,
+  pass_hash VARCHAR(255) NOT NULL,
+  totp_secret VARCHAR(64) NULL,
+  totp_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+  recovery_codes TEXT NULL,
+  created DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS passkeys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  cred_id VARCHAR(512) NOT NULL UNIQUE,
+  public_key TEXT NOT NULL,
+  sign_count INT UNSIGNED NOT NULL DEFAULT 0,
+  name VARCHAR(80) NOT NULL DEFAULT 'Zařízení',
+  created DATETIME NOT NULL,
+  last_used DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ip VARCHAR(64) NOT NULL,
+  ts DATETIME NOT NULL,
+  INDEX (ip, ts)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS discs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  brand VARCHAR(50) NOT NULL,
+  model VARCHAR(50) NOT NULL,
+  category ENUM('putter','approach','midrange','fairway','distance') NOT NULL,
+  speed FLOAT NOT NULL DEFAULT 0,
+  glide FLOAT NOT NULL DEFAULT 0,
+  turn FLOAT NOT NULL DEFAULT 0,
+  fade FLOAT NOT NULL DEFAULT 0,
+  weight INT NULL,
+  plastic VARCHAR(50) NULL,
+  in_bag TINYINT(1) NOT NULL DEFAULT 0,
+  note TEXT NULL,
+  is_lost TINYINT(1) NOT NULL DEFAULT 0,
+  is_sold TINYINT(1) NOT NULL DEFAULT 0,
+  for_sale TINYINT(1) NOT NULL DEFAULT 0,
+  price INT NULL,
+  image_path VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL,
+  INDEX (in_bag), INDEX (for_sale, is_sold, is_lost)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS inquiries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  disc_id INT NULL,
+  name VARCHAR(100) NOT NULL,
+  contact VARCHAR(150) NOT NULL,
+  message TEXT NULL,
+  ip VARCHAR(64) NULL,
+  created DATETIME NOT NULL,
+  handled TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  year SMALLINT NOT NULL,
+  slug VARCHAR(40) NOT NULL,
+  date DATE NULL,
+  name VARCHAR(150) NOT NULL,
+  short VARCHAR(40) NOT NULL,
+  series VARCHAR(80) NULL,
+  division VARCHAR(20) NULL,
+  place VARCHAR(10) NULL,
+  total INT NOT NULL DEFAULT 0,
+  event_rating INT NULL,
+  pdga_rating INT NULL,
+  par INT NOT NULL DEFAULT 0,
+  dist INT NULL,
+  unit VARCHAR(4) NOT NULL DEFAULT 'ft',
+  holes INT NOT NULL DEFAULT 18,
+  pdga TINYINT(1) NOT NULL DEFAULT 1,
+  venue VARCHAR(150) NULL,
+  cat TINYINT NULL,
+  note TEXT NULL,
+  weather TEXT NULL,
+  UNIQUE KEY uq_year_slug (year, slug),
+  INDEX (year, date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS rounds (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  event_id INT NOT NULL,
+  idx TINYINT NOT NULL,
+  score INT NOT NULL,
+  throws INT NOT NULL,
+  rating INT NULL,
+  day VARCHAR(12) NULL,
+  fw_h INT NULL, fw_n INT NULL,
+  sc_h INT NULL, sc_n INT NULL,
+  c1r_h INT NULL, c1r_n INT NULL,
+  c2r_h INT NULL, c2r_n INT NULL,
+  c1x_h INT NULL, c1x_n INT NULL,
+  c2_h INT NULL, c2_n INT NULL,
+  avg_putt DECIMAL(6,1) NULL,
+  long_putt DECIMAL(6,1) NULL,
+  ob INT NULL,
+  weather TEXT NULL,
+  UNIQUE KEY uq_event_idx (event_id, idx),
+  CONSTRAINT fk_round_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+CREATE TABLE IF NOT EXISTS rating_history (
+  d DATE PRIMARY KEY,
+  rating INT NOT NULL,
+  rounds_used INT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
