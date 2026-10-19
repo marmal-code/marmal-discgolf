@@ -52,7 +52,7 @@ const GLOSS=[
  ['MP40 / MPO','Divize: MP40 = muži 40+ (masters), MPO = otevřená mužská kategorie bez omezení věku, v níž hrají i mladí hráči.'],
  ['ČADG kat. 1–3','Kategorie turnaje v české sérii; vyšší číslo = významnější turnaj (např. MČR a 1. liga mají kat. 3).'],
  ['Vztah k ratingu (r)','Korelace od −1 do +1. Čím blíž k 1 (nebo −1), tím víc se statistika pohybuje společně s ratingem kola. Neříká, co je příčina; hřiště a počasí do toho taky mluví.'],
- ['Barvy v tabulkách','Zelená/červená = hodnota je výrazně (víc než o 0,6 směrodatné odchylky) lepší/horší než průměr tvých PDGA kol za sezónu.'],
+ ['Barvy v tabulkách','Zelená/červená = hodnota je výrazně (víc než o 0,6 směrodatné odchylky) lepší/horší než tvůj průměr z ostatních kol (12 měsíců před turnajem; když jich je málo, ze všech ostatních turnajů; když není dost kol, barvy se nezobrazují). Statistiky z méně než 3 pokusů se nebarví.'],
 ];
 const MK=Object.fromEntries(METRICS.map(m=>[m.k,m]));
 function val(m,rd){
@@ -84,6 +84,16 @@ function heat(m,v,all){ // vrací 'g' | 'b' | ''
   if(v==null||m.hi===0)return '';
   const arr=all.map(r=>val(m,r)).filter(x=>x!=null);const s=sd(arr);if(!s)return '';
   const z=(v-mean(arr))/s*m.hi;return z>0.6?'g':z<-0.6?'b':'';
+}
+/* Srovnání pro barvy: tvoje ostatní kola z 12 měsíců před turnajem (min. 8 kol), jinak všechna ostatní kola; málo dat = bez barev. */
+function baselineFor(e){
+  const MIN=8, ms=e.date?new Date(e.date).getTime():null, win=365*864e5, near=[], other=[];
+  Object.values(DATA.years).forEach(y=>y.events.forEach(ev=>{
+    if(ev===e||(e.pdga&&!ev.pdga))return;
+    ev.rounds.forEach((r,i)=>{r.ev=ev;r.i=i;other.push(r);const t=ev.date?new Date(ev.date).getTime():null;if(ms!=null&&t!=null&&t<=ms&&ms-t<=win)near.push(r)})}));
+  if(near.length>=MIN)return {rds:near,label:`tvůj průměr za 12 měsíců před turnajem (${near.length} kol)`};
+  if(other.length>=MIN)return {rds:other,label:`tvůj průměr ze všech ostatních turnajů (${other.length} kol)`};
+  return {rds:null,label:`zatím málo kol pro srovnání (potřeba aspoň ${MIN} jiných kol)`};
 }
 function colorFor(m,v,avg){if(m.hi===0||v==null)return 'var(--neutral)';const d=(v-avg)*m.hi;return d>=0?'var(--good)':'var(--bad)'}
 
@@ -175,18 +185,18 @@ function viewEvents(){
 }
 function viewDetail(){
   const evs=events(),idx=evs.findIndex(e=>e.id===S.ev),e=evs[idx];
-  const base=rounds(e.pdga?'pdga':'all');
+  const bl=baselineFor(e),base=bl.rds;
   const rowsDef=METRICS.filter(m=>m.k!=='s');
   const dist=e.dist?`${nf(e.dist*(e.unit==='ft'?FT:1))} m`:null;
   let h=`<div class="nav2"><button class="back" data-back>← Všechny turnaje</button></div>
   <section class="card"><div class="row" style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap"><h2 style="margin:0">${esc(e.name)}</h2><span class="place${isWin(e)?' win':''}">${esc(e.place)} místo</span></div>
   <div class="facts"><span>Datum <b>${fmtD(e.date)}</b></span>${e.venue?`<span>${esc(e.venue)}</span>`:''}${e.cat?`<span>ČADG kat. <b>${e.cat}</b></span>`:''}<span>Divize <b>${esc(e.division)}</b></span><span>Celkem <b>${sg(e.total)}</b></span>${e.eventRating?`<span>Rating turnaje <b>${e.eventRating}</b></span>`:''}${e.pdgaRating?`<span>Můj rating tehdy <b>${e.pdgaRating}</b></span>`:''}<span>Par <b>${e.par}</b> × ${e.rounds.length}</span><span>${e.holes} jamek</span>${dist?`<span>Délka <b>${dist}</b></span>`:''}</div>
   ${e.note?`<div class="note">${esc(e.note)}</div>`:''}</section>
-  <section class="card"><h3 style="margin-bottom:4px">Kolo po kole</h3><p class="sub" style="margin:0 0 8px">Barva = výrazně lepší / horší než ${e.pdga?'ostatní PDGA kola':'ostatní kola'} sezóny.</p><div class="scroll"><table><thead><tr><th>Statistika</th>${e.rounds.map((r,i)=>`<th>K${i+1}${r.day&&r.day!=='jednodenní'?`<small>${r.day}</small>`:''}</th>`).join('')}<th>Celkem</th></tr></thead><tbody>`;
+  <section class="card"><h3 style="margin-bottom:4px">Kolo po kole</h3><p class="sub" style="margin:0 0 8px">Barva = výrazně lepší / horší než ${esc(bl.label)}.</p><div class="scroll"><table><thead><tr><th>Statistika</th>${e.rounds.map((r,i)=>`<th>K${i+1}${r.day&&r.day!=='jednodenní'?`<small>${r.day}</small>`:''}</th>`).join('')}<th>Celkem</th></tr></thead><tbody>`;
   h+=`<tr><td>Skóre vůči paru</td>${e.rounds.map(r=>`<td><b>${sg(r.s)}</b><small>${r.t} hodů</small></td>`).join('')}<td><b>${sg(e.total)}</b><small>${e.rounds.reduce((a,r)=>a+r.t,0)} hodů</small></td></tr>`;
   rowsDef.forEach(m=>{
     h+=`<tr><td>${esc(m.name)}</td>`;
-    e.rounds.forEach(r=>{r.ev=e;const v=val(m,r);const c=heat(m,v,base);
+    e.rounds.forEach(r=>{r.ev=e;const v=val(m,r);const c=base&&!(m.type==='ratio'&&r[m.k]&&r[m.k][1]<3)?heat(m,v,base):'';
       const frac=m.type==='ratio'&&r[m.k]?`<small>${r[m.k][0]}/${r[m.k][1]}</small>`:'';
       h+=`<td class="${c}">${v==null?'–':m.fmt(v)}${frac}</td>`});
     let tot;
@@ -196,7 +206,7 @@ function viewDetail(){
     else tot=agg(m,e.rounds);
     h+=`<td><b>${tot==null?'–':m.fmt(tot)}</b></td></tr>`;
   });
-  h+=`</tbody></table></div><div class="legend"><span><i class="dot" style="background:var(--good)"></i>výrazně lepší než průměr sezóny</span><span><i class="dot" style="background:var(--bad)"></i>výrazně horší</span></div></section>`;
+  h+=`</tbody></table></div><div class="legend"><span><i class="dot" style="background:var(--good)"></i>výrazně lepší než srovnávací průměr</span><span><i class="dot" style="background:var(--bad)"></i>výrazně horší</span></div></section>`;
   h+=`<div class="nav2">${idx>0?`<button class="back" data-open="${evs[idx-1].id}">← ${esc(evs[idx-1].short)}</button>`:'<span></span>'}${idx<evs.length-1?`<button class="back" data-open="${evs[idx+1].id}">${esc(evs[idx+1].short)} →</button>`:''}</div>`;
   return h;
 }

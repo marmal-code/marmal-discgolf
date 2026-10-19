@@ -36,6 +36,7 @@
 | v4 | Import výsledků z PDGA Live z odkazu (dohledání podle PDGA čísla/jména), aktualizace existujícího turnaje, divize hráče v Nastavení. Migrace 007 (`events.pdga_id`, `rounds.hole_scores/hole_pars`). Neověřeno proti živému API (z vývojového prostředí nedostupné) – ověřeno na vzorových datech podle struktury API. |
 | v4.1 | Oprava importu z PDGA Live: seznam hráčů se bere z `data.scores` (dřív se omylem vzal seznam hřišť `layouts`, který má také klíč `Name`); PDGA číslo se čistí od nečíslic. Ověřeno na reálné struktuře odpovědi (turnaj 105098, MČR Masters 2026). |
 | v5 | Import z PDGA Live stahuje i statistiky kola (fairway, C1R, C2R, scramble, C1X, C2 putting, OB, průměrný a nejdelší putt); neúspěch stahování statistik import nezastaví; ručně zadané hodnoty se nepřepisují prázdnými. |
+| v5.1 | Oprava barev ve statistikách turnaje: porovnání už není jen s ostatními koly stejné sezóny (u sezóny s jediným turnajem se obě kola porovnávala mezi sebou), ale s průměrem tvých ostatních PDGA kol z 12 měsíců před turnajem (min. 8 kol), jinak ze všech ostatních turnajů; málo dat = bez barev; statistiky z <3 pokusů se nebarví. |
 
 ## Plán
 - v2: ruční zápis turnaje a kol formulářem, počasí a podmínky (automaticky + úprava), bag na turnaj, plán na turnaj
