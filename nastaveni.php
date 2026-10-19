@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
     if ($a === 'hrac') {
-        set_setting('player_name', trim((string)($_POST['player_name'] ?? '')) ?: 'Hráč'); set_setting('player_pdga', (string)(int)($_POST['player_pdga'] ?? 0)); set_setting('rating_goal', (string)(int)($_POST['rating_goal'] ?? 980));
+        set_setting('player_name', trim((string)($_POST['player_name'] ?? '')) ?: 'Hráč'); set_setting('player_pdga', (string)(int)($_POST['player_pdga'] ?? 0)); set_setting('rating_goal', (string)(int)($_POST['rating_goal'] ?? 980)); set_setting('player_division', mb_substr(trim((string)($_POST['player_division'] ?? '')), 0, 20) ?: 'MP40');
         flash('Profil uložen.'); redirect('nastaveni.php');
     }
     if ($a === 'heslo') {
@@ -89,6 +89,7 @@ page_start('Nastavení', 'nastaveni.php');
   <form method="post"><?= csrf_field() ?><input type="hidden" name="a" value="hrac">
     <div class="row2"><div class="field"><label>Jméno</label><input type="text" name="player_name" value="<?= h(setting('player_name', 'Martin Malý')) ?>"></div>
     <div class="field"><label>PDGA číslo</label><input type="number" name="player_pdga" value="<?= h(setting('player_pdga', '113434')) ?>"></div>
+    <div class="field"><label>Divize</label><input type="text" name="player_division" value="<?= h(setting('player_division', 'MP40')) ?>"></div>
     <div class="field"><label>Cíl ratingu</label><input type="number" name="rating_goal" value="<?= h(setting('rating_goal', '980')) ?>"></div></div>
     <button class="btn ghost">Uložit</button></form>
 </section>

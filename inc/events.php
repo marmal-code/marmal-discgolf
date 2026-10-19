@@ -40,3 +40,9 @@ function weather_line(array $r): string {
     if ($r['w_cond']) $p[] = $r['w_cond'];
     return implode(' · ', $p);
 }
+
+function event_unique_slug(int $year, string $base): string {
+    $slug = $base = slugify($base); $n = 2;
+    $chk = db()->prepare('SELECT COUNT(*) FROM events WHERE year = ? AND slug = ?');
+    while (true) { $chk->execute([$year, $slug]); if (!(int)$chk->fetchColumn()) return $slug; $slug = $base . '-' . $n++; }
+}

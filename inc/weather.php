@@ -8,6 +8,10 @@ const WMO = [0 => 'jasno', 1 => 'skoro jasno', 2 => 'polojasno', 3 => 'zataženo
     85 => 'sněhové přeháňky', 86 => 'sněhové přeháňky', 95 => 'bouřka', 96 => 'bouřka s kroupami', 99 => 'bouřka s kroupami'];
 
 function http_json(string $url): ?array {
+    if ($dir = getenv('DG_HTTP_MOCK_DIR')) {                 // jen pro lokální testy: odpovědi ze souborů
+        $f = rtrim($dir, '/') . '/' . preg_replace('/\W+/', '_', basename((string)parse_url($url, PHP_URL_PATH)) . '?' . (string)parse_url($url, PHP_URL_QUERY)) . '.json';
+        return is_file($f) ? json_decode((string)file_get_contents($f), true) : null;
+    }
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_USERAGENT => 'discgolf-app']);
     $r = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);

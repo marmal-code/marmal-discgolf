@@ -12,7 +12,7 @@ $done = db()->query('SELECT e.*, (SELECT COUNT(*) FROM rounds r WHERE r.event_id
 page_start('Turnaje', 'turnaje.php');
 ?>
 <div class="ph">Turnaje <small><?= count($plan) ?> plánovaných · <?= count($done) ?> odehraných</small></div>
-<div><a class="btn" href="turnaj.php?new=1">+ Nový turnaj</a></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="turnaj.php?new=1">+ Nový turnaj</a><a class="btn ghost" href="import.php">Import z PDGA Live</a></div>
 
 <?php if ($plan): ?><h2 style="margin:18px 0 8px">Plán</h2>
 <?php foreach ($plan as $e):
