@@ -73,7 +73,7 @@ function cadg_import(string $url): array {
     $u = cadg_parse_url($url); if (!$u) throw new RuntimeException('Z odkazu nevyčtu turnaj. Vlož odkaz z Live scoringu na ceskydiscgolf.cz (stránka „Výsledky“ s vybraným turnajem).');
     $t = $u['t'];
     $ev = cadg_get("tournaments/$t/"); if (!is_array($ev) || empty($ev['name'])) throw new RuntimeException('Turnaj se nepodařilo načíst z ceskydiscgolf.cz (adresa nebo dostupnost webu).');
-    $uid = (int)setting('cadg_user_id', '0'); if (!$uid) { try { $uid = cadg_find_user(); } catch (Throwable $e) {} }
+    $uid = 0; try { $uid = cadg_find_user(); } catch (Throwable $e) {}
     $name = (string)setting('player_name', '');
     $divs = []; foreach ((array)($ev['divisions'] ?? []) as $d) if (!empty($d['division'])) $divs[(string)$d['division']] = (string)($d['division_name'] ?? '');
     if ($u['d']) { $divs = [$u['d'] => $divs[$u['d']] ?? ''] + $divs; }          // divize z odkazu první
@@ -117,14 +117,16 @@ function cadg_import(string $url): array {
 
 // ───────────── Profil hráče (rating, čísla, členství, rozhodčí) ─────────────
 
-/** Najde moje ČADG id podle PDGA čísla / jména z Nastavení a uloží ho. */
+/** Vrátí interní ČADG id ověřené podle ČADG čísla (Nastavení, výchozí 2914). Špatně zadané číslo se nepřijme. */
 function cadg_find_user(): int {
-    $uid = (int)setting('cadg_user_id', '0'); if ($uid) return $uid;
-    $name = trim((string)setting('player_name', '')); $num = (int)preg_replace('/\D+/', '', (string)setting('player_pdga', '0')); if ($name === '') return 0;
-    $parts = explode(' ', $name); $last = trim((string)end($parts));
-    $j = cadg_get('user/users/?page=1&page_size=50&search=' . rawurlencode($name)) ?: cadg_get('user/users/?page=1&page_size=50&search=' . rawurlencode($last));
-    foreach ((array)($j['results'] ?? []) as $r) {
-        if (($num && (int)($r['pdga_number'] ?? 0) === $num) || (!$num && pdga_ascii($r['first_name'] . $r['last_name']) === pdga_ascii($name))) { set_setting('cadg_user_id', (string)(int)$r['id']); return (int)$r['id']; }
+    $no = (int)preg_replace('/\D+/', '', (string)setting('cadg_no', '2914'));
+    $uid = (int)setting('cadg_user_id', '0');
+    if ($uid && $no && setting('cadg_ok', '') === "$no|$uid") return $uid;
+    if ($uid) { $j = cadg_get("user/users/$uid/"); if (is_array($j) && (int)($j['old_id'] ?? 0) === $no) { set_setting('cadg_ok', "$no|$uid"); return $uid; } }
+    $num = (int)preg_replace('/\D+/', '', (string)setting('player_pdga', '0')); $name = trim((string)setting('player_name', ''));
+    foreach (array_filter(['user_' . $no, $name]) as $q) {
+        $j = cadg_get('user/users/?page=1&page_size=50&search=' . rawurlencode($q));
+        foreach ((array)($j['results'] ?? []) as $r) if ($no && (int)($r['old_id'] ?? 0) === $no) { set_setting('cadg_user_id', (string)(int)$r['id']); set_setting('cadg_ok', $no . '|' . (int)$r['id']); return (int)$r['id']; }
     }
     return 0;
 }
@@ -132,7 +134,7 @@ function cadg_find_user(): int {
 /** Stáhne profil a uloží (settings.cadg_profile JSON). Když se změnil PDGA rating, zapíše ho do rating_history. */
 function cadg_profile_sync(): array {
     set_setting('cadg_last', now());
-    $uid = cadg_find_user(); if (!$uid) { set_setting('cadg_err', 'Nenašel jsem tě na ceskydiscgolf.cz (zkontroluj jméno a PDGA číslo v profilu hráče).'); return ['ok' => false, 'msg' => (string)setting('cadg_err')]; }
+    $uid = cadg_find_user(); if (!$uid) { set_setting('cadg_err', 'Nenašel jsem tě na ceskydiscgolf.cz (zkontroluj ČADG číslo v Nastavení).'); return ['ok' => false, 'msg' => (string)setting('cadg_err')]; }
     $j = cadg_get("user/users/$uid/");
     if (!is_array($j) || empty($j['id'])) { set_setting('cadg_err', 'ceskydiscgolf.cz neodpovědělo.'); return ['ok' => false, 'msg' => 'ceskydiscgolf.cz neodpovědělo.']; }
     set_setting('cadg_err', '');
@@ -141,7 +143,9 @@ function cadg_profile_sync(): array {
         'pdga_no' => $j['pdga_number'] ?? null, 'pdga_rating' => $j['pdga_rating'] ?? null, 'idg_rating' => $j['idg_rating'] ?? null,
         'pdga_active' => !empty($j['has_active_pdga_membership']), 'pdga_pro' => !empty($j['is_pdga_professional']), 'pdga_until' => $j['pdga_membership_end_date'] ?? null,
         'ref' => $j['pdga_official_status'] ?? null, 'ref_until' => $j['pdga_official_end_date'] ?? null,
-        'cadg_until' => $j['membership_end_date'] ?? null, 'cadg_type' => $j['membership_type'] ?? null];
+        'cadg_until' => $j['membership_end_date'] ?? null, 'cadg_type' => $j['membership_type'] ?? null,
+        'nick' => $j['nickname'] ?? null, 'nat' => $j['nationality'] ?? null, 'birth' => $j['birth_year'] ?? null, 'photo' => $j['photo'] ?? null,
+        'years' => array_values((array)($j['paid_membership_years'] ?? [])), 'cadg_from' => $j['membership_start_date'] ?? null];
     set_setting('cadg_profile', json_encode($p, JSON_UNESCAPED_UNICODE));
     $changed = false;
     if ((int)$p['pdga_rating'] > 0) {

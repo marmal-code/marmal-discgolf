@@ -50,19 +50,33 @@ page_start('Přehled', 'index.php');
 <?php endif; ?>
 <?php $pf = cadg_profile(); if ($pf):
   $until = function (?string $d): string { if (!$d) return ''; $days = (int)floor((strtotime($d) - strtotime(date('Y-m-d'))) / 86400); $cls = $days < 0 ? 'b' : ($days < 60 ? 'w' : 'g'); return '<span class="pill ' . $cls . '">' . h(date('j. n. Y', strtotime($d))) . ($days < 0 ? ' · vypršelo' : ($days < 60 ? ' · za ' . $days . ' dní' : '')) . '</span>'; }; ?>
-<section class="card profile" style="margin-top:16px"><h3 style="margin:0 0 10px">Hráčský profil <small class="muted" style="font-weight:500">· ČADG / PDGA</small></h3>
-  <div class="pfgrid">
-    <div><b><?= (int)$pf['pdga_rating'] ?: '–' ?></b><span>PDGA rating</span></div>
-    <div><b><?= (int)$pf['idg_rating'] ?: '–' ?></b><span>iDG rating</span></div>
-    <div><b><?= h((string)($pf['pdga_no'] ?: '–')) ?></b><span>PDGA číslo</span></div>
-    <div><b><?= h((string)($pf['cadg_no'] ?: '–')) ?></b><span>ČADG číslo</span></div>
+<section class="card profile" style="margin-top:16px">
+  <div class="pfhead">
+    <?php if (!empty($pf['photo'])): ?><img class="pfphoto" src="<?= h((string)$pf['photo']) ?>" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><?php endif; ?>
+    <div><h3 style="margin:0"><?= h((string)$pf['name']) ?><?= !empty($pf['nick']) ? ' <small class="muted" style="font-weight:500">„' . h((string)$pf['nick']) . '“</small>' : '' ?></h3>
+      <div class="pfpills"><?php if ($pf['club']) echo '<span class="pill c">' . h((string)$pf['club']) . '</span>'; if ($pf['city']) echo '<span class="pill">' . h((string)$pf['city']) . '</span>';
+        if (!empty($pf['nat'])) echo '<span class="pill">' . h(['CZ' => 'Česká republika', 'SK' => 'Slovensko'][$pf['nat']] ?? (string)$pf['nat']) . '</span>';
+        if (!empty($pf['birth'])) echo '<span class="pill">' . (int)$pf['birth'] . '</span>';
+        $cOk = $pf['cadg_until'] && strtotime((string)$pf['cadg_until']) >= strtotime(date('Y-m-d')); echo '<span class="pill ' . ($cOk ? 'g' : 'b') . '">' . ($cOk ? 'Členství platné' : 'Členství neplatné') . '</span>'; ?></div></div>
   </div>
-  <div class="pfrows">
-    <div><span>PDGA členství</span><span><?= $pf['pdga_active'] ? ($pf['pdga_pro'] ? 'Profesionál' : 'Aktivní') : '<span class="pill b">neaktivní</span>' ?> <?= $until($pf['pdga_until']) ?></span></div>
-    <div><span>ČADG členství</span><span><?= h((string)$pf['cadg_type']) ?> <?= $until($pf['cadg_until']) ?></span></div>
-    <div><span>PDGA rozhodčí</span><span><?= $pf['ref'] === 'yes' ? 'Ano ' . $until($pf['ref_until']) : 'Ne' ?></span></div>
-    <?php if ($pf['club']): ?><div><span>Klub</span><span><?= h((string)$pf['club']) ?></span></div><?php endif; ?>
+  <div class="pftwo">
+    <div class="pfbox cadg"><h4>ČADG</h4>
+      <div class="pfgrid">
+        <div><b><?= (int)$pf['idg_rating'] ?: '–' ?></b><span>iDG rating</span></div>
+        <div><b><?= h((string)($pf['cadg_no'] ?: '–')) ?></b><span>ČADG číslo</span></div>
+        <div><b><?= $cOk ? 'Platné' : 'Neplatné' ?></b><span>stav členství</span></div>
+        <div><b><?= $pf['cadg_until'] ? h(date('j. n. Y', strtotime((string)$pf['cadg_until']))) : '–' ?></b><span>platnost do</span></div>
+      </div></div>
+    <div class="pfbox pdga"><h4>PDGA</h4>
+      <div class="pfgrid">
+        <div><b><?= (int)$pf['pdga_rating'] ?: '–' ?></b><span>PDGA rating</span></div>
+        <div><b><?= $pf['pdga_no'] ? '<a href="https://www.pdga.com/player/' . (int)$pf['pdga_no'] . '" target="_blank" rel="noopener noreferrer" style="color:inherit">' . (int)$pf['pdga_no'] . '</a>' : '–' ?></b><span>PDGA číslo</span></div>
+        <div><b><?= $pf['pdga_active'] ? ($pf['pdga_pro'] ? 'Profesionál' : 'Aktivní') : 'Neaktivní' ?></b><span>PDGA členství</span></div>
+        <div><b><?= $pf['pdga_until'] ? h(date('j. n. Y', strtotime((string)$pf['pdga_until']))) : '–' ?></b><span>platnost PDGA do</span></div>
+        <div class="wide"><b><?= $pf['ref'] === 'yes' ? 'Ano' . ($pf['ref_until'] ? ' (' . h(date('j. n. Y', strtotime((string)$pf['ref_until']))) . ')' : '') : 'Ne' ?></b><span>PDGA rozhodčí</span></div>
+      </div></div>
   </div>
+  <?php if (!empty($pf['years'])): ?><div class="pfyears"><span class="muted">Historie členství</span><?php foreach ($pf['years'] as $y) echo '<span class="pill">' . (int)$y . '</span>'; ?></div><?php endif; ?>
   <p class="sub" style="margin:8px 0 0">Aktualizuje se samo z ceskydiscgolf.cz<?= setting('cadg_last', '') ? ' · naposledy ' . h(date('j. n. H:i', strtotime((string)setting('cadg_last')))) : '' ?>. <a href="nastaveni.php#cadg">Nastavení</a></p>
 </section>
 <?php endif; ?>

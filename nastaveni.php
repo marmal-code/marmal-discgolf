@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
     if ($a === 'cadg_sync') {
-        require_once __DIR__ . '/inc/cadg.php'; if (isset($_POST['cadg_user_id'])) set_setting('cadg_user_id', (string)(int)$_POST['cadg_user_id']);
+        require_once __DIR__ . '/inc/cadg.php'; if (isset($_POST['cadg_no'])) { $n = (string)(int)preg_replace('/\D+/', '', (string)$_POST['cadg_no']); if ($n !== setting('cadg_no', '2914')) { set_setting('cadg_no', $n); set_setting('cadg_user_id', '0'); set_setting('cadg_ok', ''); } }
         $r = cadg_profile_sync(); flash($r['msg'], $r['ok'] ? 'ok' : 'err'); redirect('nastaveni.php#cadg');
     }
     if ($a === 'health_save') {
@@ -116,7 +116,7 @@ page_start('Nastavení', 'nastaveni.php');
   <h2>Profil z Českého discgolfu</h2>
   <p class="sub" style="margin-top:0">Rating PDGA a iDG, čísla, členství a rozhodčí se samy stahují z ceskydiscgolf.cz (veřejný profil, bez hesla) jednou za 12 hodin a ukazují se na Přehledu. Při změně se aktualizuje i rating v historii.</p>
   <form method="post" class="row2"><?= csrf_field() ?><input type="hidden" name="a" value="cadg_sync">
-    <div class="field"><label>ČADG id (najde se samo)</label><input type="number" name="cadg_user_id" value="<?= h((string)setting('cadg_user_id', '')) ?>" placeholder="automaticky"></div>
+    <div class="field"><label>ČADG číslo (např. 2914)</label><input type="number" name="cadg_no" value="<?= h((string)setting('cadg_no', '2914')) ?>"></div>
     <div class="field" style="align-self:end"><button class="btn">Aktualizovat profil</button></div></form>
   <?php if (setting('cadg_err', '')): ?><p class="sub" style="color:var(--bad)"><?= h((string)setting('cadg_err')) ?></p><?php elseif (setting('cadg_last', '')): ?><p class="sub" style="margin-bottom:0">Naposledy: <?= h(date('j. n. H:i', strtotime((string)setting('cadg_last')))) ?></p><?php endif; ?>
 </section>

@@ -225,3 +225,11 @@ code{background:var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
 .statlist>div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px}.statlist b{white-space:nowrap;text-align:right}
 .histrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);margin:0}
 .btn.block{display:block;width:100%}
+
+.pfhead{display:flex;gap:12px;align-items:center;margin-bottom:12px}.pfphoto{width:64px;height:64px;border-radius:12px;object-fit:cover;flex:none;background:var(--line)}
+.pfpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pfpills .pill.c{background:var(--brand,#1d6b4e);color:#fff}
+.pftwo{display:grid;grid-template-columns:1fr;gap:10px}@media (min-width:760px){.pftwo{grid-template-columns:1fr 1fr}}
+.pfbox{border:1px solid var(--line);border-radius:14px;padding:10px}.pfbox h4{margin:0 0 8px;font:700 12px var(--font-d);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.pfbox.cadg{border-left:3px solid #c0392b}.pfbox.pdga{border-left:3px solid #1b9a8a}
+.pfbox .pfgrid{grid-template-columns:repeat(2,1fr);margin:0}.pfbox .pfgrid b{font-size:16px}.pfgrid .wide{grid-column:1/-1}
+.pfyears{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
