@@ -14,7 +14,12 @@ $fnum = fn(float $v): string => rtrim(rtrim(number_format($v, 2, ',', ' '), '0')
 
 // Pokrok cvičení z Moje Zdraví (podle cvičení a varianty)
 $drills = [];
-foreach (db()->query('SELECT * FROM health_sessions WHERE kind = "drill" ORDER BY d, id')->fetchAll() as $r) $drills[$r['title'] . '|' . (string)$r['variant']][] = $r;
+require_once __DIR__ . '/inc/drills.php';
+foreach (db()->query('SELECT * FROM drill_sessions ORDER BY d, id')->fetchAll() as $r) {
+    $DD = DRILLS[$r['drill']] ?? null; if (!$DD) continue;
+    $r['title'] = $DD['name']; $r['variant'] = $r['variant'] !== 'normal' ? explode(' (', $DD['variants'][$r['variant']] ?? '')[0] : ''; $r['metric'] = $DD['metric']; $r['unit'] = $DD['unit']; $r['better'] = $DD['better'];
+    $drills[$r['drill'] . '|' . $r['variant']][] = $r;
+}
 
 // Turnaje s přípravou
 $events = db()->query('SELECT * FROM events WHERE status = "done" AND date IS NOT NULL ORDER BY date DESC LIMIT 12')->fetchAll();
@@ -25,6 +30,7 @@ $months = [];
 for ($k = 0; $k < 6; $k++) {
     $ms = date('Y-m-01', strtotime(date('Y-m-01') . " -$k month")); $me = date('Y-m-t', strtotime($ms));
     $q = db()->prepare('SELECT kind, COUNT(*) n FROM health_sessions WHERE d BETWEEN ? AND ? GROUP BY kind'); $q->execute([$ms, $me]); $c = array_column($q->fetchAll(), 'n', 'kind');
+    $q = db()->prepare('SELECT COUNT(*) FROM drill_sessions WHERE d BETWEEN ? AND ?'); $q->execute([$ms, $me]); $c['drill'] = (int)$q->fetchColumn();
     $r = db()->prepare('SELECT ROUND(AVG(r.rating)) a, COUNT(DISTINCT e.id) n FROM rounds r JOIN events e ON e.id = r.event_id WHERE e.date BETWEEN ? AND ? AND r.rating IS NOT NULL'); $r->execute([$ms, $me]); $rr = $r->fetch();
     $s = tr_plan() ? tr_summary($ms, min($me, $today)) : ['planned' => 0, 'done' => 0];
     $months[] = ['m' => $ms, 'gym' => (int)($c['gym'] ?? 0), 'drill' => (int)($c['drill'] ?? 0), 'pct' => $s['planned'] ? (int)round($s['done'] / $s['planned'] * 100) : null, 'rating' => $rr['a'] ? (int)$rr['a'] : null, 'ev' => (int)$rr['n']];
@@ -35,7 +41,7 @@ page_start('Příprava a výsledky', 'trenink.php');
 ?>
 <div class="ph">Příprava a výsledky <small><a href="trenink.php">← Trénink</a></small></div>
 <?php if (!health_conf()): ?>
-  <div class="card empty"><b>Moje Zdraví není propojené</b><span class="sub">Posilovna a putting cvičení se stáhnou z aplikace Moje Zdraví a objeví se tady i v plánu.</span><a class="btn" href="nastaveni.php#zdravi">Propojit</a></div>
+  <div class="card empty"><b>Moje Zdraví není propojené</b><span class="sub">Posilovna se stáhne z aplikace Moje Zdraví a objeví se tady i v plánu; cvičení máš v záložce Cvičení.</span><a class="btn" href="nastaveni.php#zdravi">Propojit</a></div>
 <?php endif; ?>
 
 <section class="card">
@@ -69,8 +75,8 @@ page_start('Příprava a výsledky', 'trenink.php');
 </section>
 
 <section class="card">
-  <h2 style="margin-top:0">Putting cvičení – pokrok</h2>
-  <?php if (!$drills) echo '<p class="muted">Zatím žádná cvičení z Moje Zdraví' . (health_conf() ? ' – zkus Synchronizovat v Nastavení.' : '.') . '</p>'; ?>
+  <h2 style="margin-top:0">Putting cvičení – pokrok <small><a href="cviceni.php">Cvičení →</a></small></h2>
+  <?php if (!$drills) echo '<p class="muted">Zatím žádné odehrané cvičení. <a href="cviceni.php">Zahrát první →</a></p>'; ?>
   <?php foreach ($drills as $key => $rows): $last = end($rows); $vals = array_map(fn($r) => (float)$r['score'], $rows); $better = $last['better'] === 'down' ? 'down' : 'up';
       $best = $better === 'up' ? max($vals) : min($vals); $recent = array_slice($rows, -8); $mx = max(array_map(fn($r) => (float)$r['score'], $recent)) ?: 1; ?>
     <div class="prep">

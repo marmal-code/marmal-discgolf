@@ -123,7 +123,7 @@ page_start('Nastavení', 'nastaveni.php');
 
 <section class="card" id="zdravi">
   <h2>Moje Zdraví</h2>
-  <p class="sub" style="margin-top:0">Stahuje posilovnu a putting cvičení z aplikace Moje Zdraví (jen čtení). Splněné tréninky se samy odškrtnou v plánu a ukážou se u příprav na turnaj.</p>
+  <p class="sub" style="margin-top:0">Posilovna se stahuje z Moje Zdraví (splněný trénink se sám odškrtne v plánu). Disc golfová cvičení děláš tady v záložce Cvičení a výsledky se posílají do Moje Zdraví; cvičení, která tam máš z dřívějška, se jednorázově načtou do historie.</p>
   <form method="post"><?= csrf_field() ?><input type="hidden" name="a" value="health_save">
     <label>Adresa exportu<input type="text" name="health_url" value="<?= h((string)setting('health_url', '')) ?>" placeholder="https://zdravi.marmal.cz/api-export.php"></label>
     <label>Klíč (z Moje Zdraví → Profil → Kroky)<input type="password" name="health_token" autocomplete="off" placeholder="<?= setting('health_token', '') ? '•••• uložen (nech prázdné, pokud neměníš)' : 'vlož klíč' ?>"></label>

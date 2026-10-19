@@ -19,6 +19,16 @@ function http_json(string $url): ?array {
     $j = json_decode((string)$r, true); return is_array($j) ? $j : null;
 }
 
+/** POST JSON (např. do Moje Zdraví). Vrací dekódovanou odpověď nebo null. Lokální test: s DG_HTTP_MOCK_DIR se tělo uloží do souboru post_*.json a odpověď je {ok:true}. */
+function http_post_json(string $url, array $data): ?array {
+    if ($dir = getenv('DG_HTTP_MOCK_DIR')) { @mkdir($dir . '/posted'); file_put_contents($dir . '/posted/' . preg_replace('/\W+/', '_', (string)($data['ext_id'] ?? 'x') . '_' . (string)($data['action'] ?? 'save')) . '.json', json_encode($data, JSON_UNESCAPED_UNICODE)); return ['ok' => true]; }
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($data, JSON_UNESCAPED_UNICODE), CURLOPT_HTTPHEADER => ['Content-Type: application/json'], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_USERAGENT => 'discgolf-app']);
+    $r = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($r === false || $code !== 200) return null;
+    $j = json_decode((string)$r, true); return is_array($j) ? $j : null;
+}
+
 /** Souřadnice místa podle názvu (město/hřiště). */
 function geocode(string $name): ?array {
     $j = http_json('https://geocoding-api.open-meteo.com/v1/search?count=1&language=cs&name=' . rawurlencode($name));

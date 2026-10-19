@@ -34,6 +34,9 @@ $end = date('Y-m-d', strtotime($week) + 6 * 86400);
 $sum = tr_summary($week, $end);
 $hq = db()->prepare('SELECT * FROM health_sessions WHERE d BETWEEN ? AND ? ORDER BY d, id'); $hq->execute([$week, $end]); $hs = [];
 foreach ($hq->fetchAll() as $h) $hs[$h['d']][] = $h;
+$dq = db()->prepare('SELECT * FROM drill_sessions WHERE d BETWEEN ? AND ? ORDER BY d, id'); $dq->execute([$week, $end]); $ds = [];
+foreach ($dq->fetchAll() as $r) $ds[$r['d']][] = $r;
+require_once __DIR__ . '/inc/drills.php';
 page_start('Trénink', 'trenink.php');
 ?>
 <div class="ph">Trénink <small><a href="trenink-plan.php">Plán<?= $plan ? ': ' . h($plan['name']) : '' ?> →</a> · <a href="priprava.php">Příprava a výsledky →</a></small></div>
@@ -62,7 +65,8 @@ page_start('Trénink', 'trenink.php');
         <div class="trmain">
           <div class="trt"><span class="kd"></span><b><?= h($it['title']) ?></b><?= $it['minutes'] ? ' <span class="muted">' . (int)$it['minutes'] . ' min</span>' : '' ?></div>
           <?php if ($it['details']): ?><div class="sub"><?= h($it['details']) ?></div><?php endif; ?>
-          <?php if ($st === 'done' && ($it['log_src'] ?? '') === 'zdravi'): ?><div class="sub" style="color:var(--good,var(--accent))">✓ <?= h((string)$it['log_note']) ?></div><?php endif; ?>
+          <?php if ($st === 'done' && in_array(($it['log_src'] ?? ''), ['zdravi', 'cviceni'], true)): ?><div class="sub" style="color:var(--good,var(--accent))">✓ <?= h((string)$it['log_note']) ?></div><?php endif; ?>
+          <?php if ($it['kind'] === 'putting' && !$st && !$future): ?><div class="sub"><a href="cviceni.php">🥏 Zahrát cvičení →</a></div><?php endif; ?>
           <?php if ($st === 'skip'): ?><div class="sub" style="color:var(--bad)">Vynecháno – <?= h(TR_REASONS[$it['reason'] ?: 'jine']) ?><?= $it['log_note'] ? ': ' . h($it['log_note']) : '' ?></div>
           <?php elseif (!$st && $d < $today): ?><div class="sub" style="color:var(--bad)">Bez záznamu – splnil jsi to?</div><?php endif; ?>
         </div>
@@ -80,6 +84,9 @@ page_start('Trénink', 'trenink.php');
         </div>
         <?php endif; ?>
       </div>
+    <?php endforeach; ?>
+    <?php foreach ($ds[$d] ?? [] as $r): $DD = DRILLS[$r['drill']] ?? null; if (!$DD) continue; ?>
+      <div class="sub" style="margin:4px 0">🥏 <a href="cviceni-hra.php?k=<?= h($r['drill']) ?>&v=<?= h($r['variant']) ?>" style="color:inherit"><b><?= h($DD['name']) ?></b></a> – <?= h(drill_num((float)$r['score'])) ?> <?= h($DD['unit']) ?> · <?= (int)$r['minutes'] ?> min</div>
     <?php endforeach; ?>
     <?php foreach ($hs[$d] ?? [] as $h): ?>
       <div class="sub" style="margin:4px 0">🔗 Moje Zdraví: <b><?= h($h['title']) ?></b><?= $h['variant'] ? ' (' . h($h['variant']) . ')' : '' ?><?= $h['score'] !== null ? ' – ' . h(rtrim(rtrim(number_format((float)$h['score'], 2, ',', ''), '0'), ',')) . ' ' . h((string)$h['unit']) : '' ?><?= $h['minutes'] ? ' · ' . (int)$h['minutes'] . ' min' : '' ?><?= $h['kind'] === 'gym' && $h['volume_kg'] ? ' · objem ' . number_format((int)$h['volume_kg'], 0, ',', ' ') . ' kg' : '' ?></div>
