@@ -18,10 +18,11 @@ function pdga_tourn_id(string $in): ?int {
 
 function pdga_ascii(string $s): string { $t = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s) ?: $s; return strtolower(preg_replace('/[^a-z]+/i', '', $t)); }
 
-/** Najde v libovolně zanořeném poli seznam hráčů (položky s klíčem PDGANum / Name). */
+/** Najde seznam hráčů (data.scores): položky s klíči ResultID/PDGANum. Hřiště (layouts) mají také „Name“, proto se Name nepoužívá. */
 function pdga_players(mixed $n): array {
     if (!is_array($n)) return [];
-    if ($n && array_is_list($n) && is_array($n[0] ?? null) && (isset($n[0]['PDGANum']) || isset($n[0]['Name']))) return $n;
+    if (is_array($n['scores'] ?? null) && array_is_list($n['scores'])) return $n['scores'];
+    if ($n && array_is_list($n) && is_array($n[0] ?? null) && (array_key_exists('PDGANum', $n[0]) || array_key_exists('ResultID', $n[0]))) return $n;
     foreach ($n as $v) { $r = pdga_players($v); if ($r) return $r; }
     return [];
 }
@@ -32,7 +33,7 @@ function pdga_round(int $tid, string $div, int $round): array {
     return $j ? pdga_players($j['data'] ?? $j) : [];
 }
 function pdga_is_me(array $p, int $num, string $name): bool {
-    if ($num > 0 && (int)($p['PDGANum'] ?? 0) === $num) return true;
+    if ($num > 0 && (int)preg_replace('/\D+/', '', (string)($p['PDGANum'] ?? '')) === $num) return true;
     return $num <= 0 && $name !== '' && pdga_ascii((string)($p['Name'] ?? '')) === pdga_ascii($name);
 }
 

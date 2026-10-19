@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
     if ($a === 'hrac') {
-        set_setting('player_name', trim((string)($_POST['player_name'] ?? '')) ?: 'Hráč'); set_setting('player_pdga', (string)(int)($_POST['player_pdga'] ?? 0)); set_setting('rating_goal', (string)(int)($_POST['rating_goal'] ?? 980)); set_setting('player_division', mb_substr(trim((string)($_POST['player_division'] ?? '')), 0, 20) ?: 'MP40');
+        set_setting('player_name', trim((string)($_POST['player_name'] ?? '')) ?: 'Hráč'); set_setting('player_pdga', (string)(int)preg_replace('/\D+/', '', (string)($_POST['player_pdga'] ?? ''))); set_setting('rating_goal', (string)(int)($_POST['rating_goal'] ?? 980)); set_setting('player_division', mb_substr(trim((string)($_POST['player_division'] ?? '')), 0, 20) ?: 'MP40');
         flash('Profil uložen.'); redirect('nastaveni.php');
     }
     if ($a === 'heslo') {

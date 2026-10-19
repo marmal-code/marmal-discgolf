@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a = (string)($_POST['a'] ?? '');
     if ($a === 'find') {
         $url = (string)($_POST['url'] ?? ''); $tid = pdga_tourn_id($url);
-        $num = (int)($_POST['pdga'] ?? 0); $name = trim((string)($_POST['name'] ?? ''));
+        $num = (int)preg_replace('/\D+/', '', (string)($_POST['pdga'] ?? '')); $name = trim((string)($_POST['name'] ?? ''));
         try {
             if (!$tid) throw new RuntimeException('Z odkazu se mi nepodařilo vyčíst číslo turnaje. Vlož odkaz z PDGA Live (např. pdga.com/live/event/12345) nebo jen číslo turnaje.');
             $m = pdga_map(pdga_lookup($tid, $num, $name, setting('player_division', 'MP40') ?: 'MP40'));
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('Výsledky naimportovány z PDGA Live. Zkontroluj údaje a doplň počasí a statistiky.'); redirect("turnaj.php?id=$id");
     }
 }
-$num = (int)setting('player_pdga', '113434'); $pname = (string)setting('player_name', 'Martin Malý');
+$num = (int)preg_replace('/\D+/', '', (string)setting('player_pdga', '113434')); $pname = (string)setting('player_name', 'Martin Malý');
 page_start('Import z PDGA Live', 'turnaje.php');
 ?>
 <div class="ph">Import z PDGA Live <small><a href="<?= $te ? 'turnaj.php?id=' . (int)$te['id'] : 'turnaje.php' ?>">← zpět</a></small></div>
