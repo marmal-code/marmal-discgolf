@@ -28,9 +28,29 @@ function pdga_players(mixed $n): array {
 }
 
 function pdga_event(int $tid): ?array { $j = http_json(PDGA_API . 'live_results_fetch_event.php?TournID=' . $tid); return is_array($j['data'] ?? null) ? $j['data'] : null; }
-function pdga_round(int $tid, string $div, int $round): array {
-    $j = http_json(PDGA_API . 'live_results_fetch_round.php?TournID=' . $tid . '&Division=' . rawurlencode($div) . '&Round=' . $round);
-    return $j ? pdga_players($j['data'] ?? $j) : [];
+/** [hráči, live_round_id] pro divizi a kolo (s cache v rámci požadavku). */
+function pdga_round_full(int $tid, string $div, int $round): array {
+    static $cache = [];
+    $k = "$tid|$div|$round";
+    if (!isset($cache[$k])) {
+        $j = http_json(PDGA_API . 'live_results_fetch_round.php?TournID=' . $tid . '&Division=' . rawurlencode($div) . '&Round=' . $round);
+        $cache[$k] = $j ? [pdga_players($j['data'] ?? $j), (int)($j['data']['live_round_id'] ?? 0)] : [[], 0];
+    }
+    return $cache[$k];
+}
+function pdga_round(int $tid, string $div, int $round): array { return pdga_round_full($tid, $div, $round)[0]; }
+
+/** Statistiky kola z PDGA Live: [resultId => [statId => [počet, příležitostí, hodnota]]]. null = nedostupné. */
+function pdga_round_stats(int $liveRoundId): ?array {
+    if ($liveRoundId <= 0) return null;
+    $j = http_json('https://www.pdga.com/api/v1/feat/stats/round-stats/' . $liveRoundId);
+    if (!is_array($j) || !array_is_list($j)) return null;
+    $out = [];
+    foreach ($j as $e) {
+        $rid = (int)($e['score']['resultId'] ?? 0); if (!$rid) continue;
+        foreach ((array)($e['stats'] ?? []) as $st) $out[$rid][(int)$st['statId']] = [$st['statCount'] ?? null, (int)($st['statOpportunityCount'] ?? 0), $st['statValue'] ?? null];
+    }
+    return $out ?: null;
 }
 function pdga_is_me(array $p, int $num, string $name): bool {
     if ($num > 0 && (int)preg_replace('/\D+/', '', (string)($p['PDGANum'] ?? '')) === $num) return true;
@@ -60,7 +80,13 @@ function pdga_lookup(int $tid, int $num, string $name, string $prefDiv = 'MP40')
     if (!$found) throw new RuntimeException('V turnaji „' . ($ev['Name'] ?? $tid) . '“ jsem nenašel hráče ' . ($num ? 'PDGA #' . $num : $name) . '. Hraješ v něm? Zkus doplnit PDGA číslo nebo jméno v Nastavení.');
     [$code, $firstSeen, $_] = $found; $rows = [];
     for ($r = 1; $r <= $maxRound; $r++) {
-        foreach (pdga_round($tid, $code, $r) as $p) if (pdga_is_me($p, $num, $name)) { if ((int)($p['RoundScore'] ?? 0) > 0 || !empty($p['HoleScores'])) $rows[$r] = $p; break; }
+        [$players, $lrid] = pdga_round_full($tid, $code, $r);
+        foreach ($players as $p) if (pdga_is_me($p, $num, $name)) {
+            if ((int)($p['RoundScore'] ?? 0) > 0 || !empty($p['HoleScores'])) {
+                $st = pdga_round_stats($lrid); $p['_stats'] = $st[(int)($p['ResultID'] ?? 0)] ?? null; $rows[$r] = $p;
+            }
+            break;
+        }
     }
     if (!$rows) throw new RuntimeException('Hráč v turnaji je, ale zatím nemá žádné odehrané kolo.');
     return ['tid' => $tid, 'event' => $ev, 'division' => $code, 'rows' => $rows];
@@ -78,9 +104,10 @@ function pdga_map(array $f): array {
         $pars = array_filter(array_map('intval', explode(',', (string)($p['Pars'] ?? ''))), fn($x) => $x > 0);
         if (!$par && $pars) $par = array_sum($pars);
         $date = (string)($ev['RoundsList'][(string)$n]['Date'] ?? '') ?: null;
+        $stats = pdga_map_stats($p['_stats'] ?? null, str_starts_with(strtolower((string)($lay['Units'] ?? '')), 'm') ? 'm' : 'ft');
         $rounds[] = ['idx' => $n - 1, 'throws' => $throws, 'par' => $par, 'score' => isset($p['RoundtoPar']) && $p['RoundtoPar'] !== '' ? (int)$p['RoundtoPar'] : $throws - $par,
             'rating' => !empty($p['RoundRating']) ? (int)$p['RoundRating'] : null, 'rdate' => $date ? substr($date, 0, 10) : null,
-            'hole_scores' => !empty($p['HoleScores']) ? implode(',', (array)$p['HoleScores']) : null, 'hole_pars' => $pars ? implode(',', $pars) : null];
+            'stats' => $stats, 'hole_scores' => !empty($p['HoleScores']) ? implode(',', (array)$p['HoleScores']) : null, 'hole_pars' => $pars ? implode(',', $pars) : null];
     }
     return [
         'pdga_id' => $f['tid'], 'player' => (string)($last['Name'] ?? ''), 'division' => $f['division'],
@@ -113,7 +140,28 @@ function pdga_save(array $m, ?int $eventId): int {
     foreach ($m['rounds'] as $r) {
         $day = ($multi && $r['rdate']) ? ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][(int)date('w', strtotime($r['rdate']))] : null;
         $st->execute([$eventId, $r['idx'], $r['score'], $r['throws'], $r['par'], $r['rating'], $r['rdate'], $day, $r['hole_scores'], $r['hole_pars']]);
+        pdga_save_round_stats($eventId, (int)$r['idx'], $r['stats'] ?? null);
     }
     event_recalc($eventId);
     return $eventId;
+}
+
+/** statId z PDGA Live → sloupce tabulky rounds. Vzdálenosti API vrací ve stopách; do aplikace se ukládají v jednotce turnaje. */
+function pdga_map_stats(?array $st, string $unit): ?array {
+    if (!$st) return null;
+    $pair = fn(int $id) => isset($st[$id]) && $st[$id][1] > 0 ? [(int)$st[$id][0], (int)$st[$id][1]] : null;
+    $o = [];
+    foreach (['fw' => 1, 'c1r' => 2, 'c2r' => 3, 'sc' => 5, 'c1x' => 7, 'c2' => 8] as $k => $id) { $p = $pair($id); if ($p) { $o[$k . '_h'] = $p[0]; $o[$k . '_n'] = $p[1]; } }
+    $dist = fn(int $id) => isset($st[$id][2]) && $st[$id][2] !== null && (float)$st[$id][2] > 0 ? round((float)$st[$id][2] * ($unit === 'm' ? 0.3048 : 1.0), 1) : null;
+    if (($v = $dist(18)) !== null) $o['avg_putt'] = $v;
+    if (($v = $dist(17)) !== null) $o['long_putt'] = $v;
+    if (isset($st[21]) && $st[21][0] !== null) $o['ob'] = (int)$st[21][0];
+    return $o ?: null;
+}
+
+/** Uloží statistiky kola; nevyplněné hodnoty (null) existující údaje nepřepíšou. */
+function pdga_save_round_stats(int $eventId, int $idx, ?array $stats): void {
+    if (!$stats) return;
+    $cols = array_keys($stats);
+    db()->prepare('UPDATE rounds SET ' . implode(', ', array_map(fn($c) => "$c = ?", $cols)) . ' WHERE event_id = ? AND idx = ?')->execute([...array_values($stats), $eventId, $idx]);
 }

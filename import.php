@@ -36,7 +36,7 @@ page_start('Import z PDGA Live', 'turnaje.php');
   <div class="row2"><div class="field"><label>PDGA číslo</label><input type="number" name="pdga" value="<?= $num ?: '' ?>"></div>
     <div class="field"><label>nebo jméno (když číslo není)</label><input type="text" name="name" value="<?= $num ? '' : h($pname) ?>"></div></div>
   <button class="btn">Najít moje výsledky</button>
-  <p class="sub" style="margin-bottom:0">Fairway, C1/C2 putting a podobné detailní statistiky PDGA Live přes toto rozhraní neposkytuje, ty můžeš doplnit ručně u kola.</p>
+  <p class="sub" style="margin-bottom:0">Stáhnou se i statistiky kola z PDGA Live (fairway, C1/C2, scramble, putting, OB), pokud je pro tvoje kolo vedou. Co chybí, doplníš ručně u kola.</p>
 </form>
 <?php else: $e = $m['event']; ?>
 <div class="card">
@@ -44,7 +44,10 @@ page_start('Import z PDGA Live', 'turnaje.php');
   <div class="sub"><?= h(fmt_date($e['date'])) ?><?= $e['end_date'] && $e['end_date'] !== $e['date'] ? '–' . h(fmt_date($e['end_date'])) : '' ?> · <?= h((string)$e['venue']) ?><?= $e['city'] ? ', ' . h($e['city']) : '' ?> · <?= h($e['tier']) ?></div>
   <div class="pills" style="margin:10px 0"><span class="pill"><?= h($m['player']) ?></span><span class="pill"><?= h($m['division']) ?></span><?php if ($e['place']): ?><span class="pill g">umístění <?= h($e['place']) ?></span><?php endif; ?><?php if ($e['pdga_rating']): ?><span class="pill">rating <?= (int)$e['pdga_rating'] ?></span><?php endif; ?></div>
   <div class="scroll"><table><thead><tr><th>Kolo</th><th>Datum</th><th>Hody</th><th>Par</th><th>Skóre</th><th>Rating</th></tr></thead><tbody>
-  <?php foreach ($m['rounds'] as $r): ?><tr><td><?= $r['idx'] + 1 ?></td><td><?= h(fmt_date($r['rdate'])) ?></td><td><?= $r['throws'] ?></td><td><?= $r['par'] ?></td><td><?= $r['score'] > 0 ? '+' . $r['score'] : ($r['score'] < 0 ? '−' . abs($r['score']) : 'E') ?></td><td><?= $r['rating'] ?: '–' ?></td></tr><?php endforeach; ?>
+  <?php foreach ($m['rounds'] as $r): ?><tr><td><?= $r['idx'] + 1 ?></td><td><?= h(fmt_date($r['rdate'])) ?></td><td><?= $r['throws'] ?></td><td><?= $r['par'] ?></td><td><?= $r['score'] > 0 ? '+' . $r['score'] : ($r['score'] < 0 ? '−' . abs($r['score']) : 'E') ?></td><td><?= $r['rating'] ?: '–' ?></td></tr>
+    <?php if (!empty($r['stats'])): $x = $r['stats']; $bits = []; foreach (['fw' => 'Fairway', 'c1r' => 'C1R', 'c2r' => 'C2R', 'sc' => 'Scramble', 'c1x' => 'C1X', 'c2' => 'C2'] as $k => $l) if (isset($x[$k . '_n'])) $bits[] = $l . ' ' . $x[$k . '_h'] . '/' . $x[$k . '_n']; if (isset($x['ob'])) $bits[] = 'OB ' . $x['ob']; ?>
+    <tr><td></td><td colspan="5" class="sub"><?= h(implode(' · ', $bits)) ?></td></tr><?php endif; ?>
+  <?php endforeach; ?>
   </tbody></table></div>
   <?php $dup = db()->prepare('SELECT id, name FROM events WHERE pdga_id = ?'); $dup->execute([$m['pdga_id']]); $d = $dup->fetch();
     if ($te || $d) echo '<p class="sub">' . ($te ? 'Aktualizuje se turnaj „' . h($te['name']) . '“.' : 'Tento turnaj už máš v aplikaci („' . h($d['name']) . '“), kola se aktualizují.') . '</p>'; else echo '<p class="sub">Založí se nový odehraný turnaj. Počasí, bag a poznámky doplníš potom.</p>'; ?>
