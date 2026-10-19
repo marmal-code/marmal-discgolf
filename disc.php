@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($v['model'] === '' || $v['brand'] === '') { flash('Vyplň značku a model.', 'err'); redirect('disc.php' . ($id ? "?id=$id" : '')); }
     $img = save_disc_image($_FILES['image'] ?? []);
     if ($d) {
-        $sql = 'UPDATE discs SET brand=?, model=?, category=?, speed=?, glide=?, turn=?, fade=?, weight=?, plastic=?, in_bag=?, note=?, is_lost=?, is_sold=?, for_sale=?, price=?' . ($img ? ', image_path=?' : '') . ' WHERE id=?';
+        $sql = 'UPDATE discs SET ' . implode(', ', array_map(fn($k) => "$k=?", array_keys($v))) . ($img ? ', image_path=?' : '') . ' WHERE id=?';
         $args = array_values($v); if ($img) { $args[] = $img; if ($d['image_path'] && str_starts_with($d['image_path'], 'uploads/discs/')) @unlink(ROOT . '/' . $d['image_path']); }
         $args[] = $id; db()->prepare($sql)->execute($args);
         flash('Uloženo.');
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect('bag.php');
 }
-$x = $d ?: ['brand' => '', 'model' => '', 'category' => 'putter', 'speed' => 3, 'glide' => 3, 'turn' => 0, 'fade' => 1, 'weight' => '', 'plastic' => '', 'in_bag' => 0, 'note' => '', 'is_lost' => 0, 'is_sold' => 0, 'for_sale' => 0, 'price' => '', 'image_path' => null];
+$x = $d ?: ['brand' => '', 'model' => '', 'category' => 'putter', 'speed' => 3, 'glide' => 3, 'turn' => 0, 'fade' => 1, 'weight' => '', 'plastic' => '', 'in_bag' => 0, 'training' => 0, 'testing' => 0, 'note' => '', 'is_lost' => 0, 'is_sold' => 0, 'for_sale' => 0, 'price' => '', 'image_path' => null];
 $brands = db()->query('SELECT DISTINCT brand FROM discs ORDER BY brand')->fetchAll(PDO::FETCH_COLUMN);
 $plastics = db()->query('SELECT DISTINCT plastic FROM discs WHERE plastic IS NOT NULL AND plastic <> "" ORDER BY plastic')->fetchAll(PDO::FETCH_COLUMN);
 page_start($d ? 'Upravit disk' : 'Nový disk', 'bag.php');
@@ -55,11 +55,14 @@ page_start($d ? 'Upravit disk' : 'Nový disk', 'bag.php');
     <?php foreach (['speed', 'glide', 'turn', 'fade'] as $k): ?><div class="field"><input type="text" inputmode="decimal" name="<?= $k ?>" value="<?= h(num((float)$x[$k])) ?>" aria-label="<?= $k ?>"></div><?php endforeach; ?>
   </div>
   <div class="field"><label>Poznámka</label><textarea name="note"><?= h((string)$x['note']) ?></textarea></div>
-  <label class="check"><input type="checkbox" name="in_bag" <?= $x['in_bag'] ? 'checked' : '' ?>> V bagu</label>
-  <label class="check"><input type="checkbox" name="for_sale" id="forsale" <?= $x['for_sale'] ? 'checked' : '' ?>> Na prodej (zobrazí se na veřejné stránce)</label>
+  <div class="lbl" style="margin:6px 0">Stav disku (lze kombinovat)</div>
+  <div class="flags">
+    <?php foreach (TAGS as $k => [$col, $label]): ?>
+      <label class="flag" style="--c:var(--t-<?= $k ?>)"><input type="checkbox" name="<?= $col ?>" id="f_<?= $k ?>" <?= !empty($x[$col]) ? 'checked' : '' ?>><span><?= h($label) ?></span></label>
+    <?php endforeach; ?>
+  </div>
+  <p class="muted" style="font-size:13px;margin:6px 0 12px">Prodaný nebo ztracený disk se automaticky vyřadí z bagu a z prodeje.</p>
   <div class="field" id="pricebox"><label>Cena (Kč)</label><input type="number" name="price" min="0" value="<?= h((string)$x['price']) ?>"></div>
-  <label class="check"><input type="checkbox" name="is_sold" <?= $x['is_sold'] ? 'checked' : '' ?>> Prodáno</label>
-  <label class="check"><input type="checkbox" name="is_lost" <?= $x['is_lost'] ? 'checked' : '' ?>> Ztraceno</label>
   <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn">Uložit</button><a class="btn ghost" href="bag.php">Zrušit</a></div>
 </form>
 <?php if ($d): ?>

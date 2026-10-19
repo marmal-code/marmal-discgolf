@@ -8,7 +8,7 @@ $hist = db()->query('SELECT d, rating FROM rating_history ORDER BY d DESC LIMIT 
 $rating = $hist ? (int)$hist[0]['rating'] : 0; $delta = count($hist) > 1 ? $rating - (int)$hist[1]['rating'] : 0;
 $goal = (int)setting('rating_goal', '980');
 $last = db()->query('SELECT e.*, (SELECT ROUND(AVG(rating)) FROM rounds WHERE event_id = e.id) AS avg_r FROM events e ORDER BY COALESCE(date, "0000-00-00") DESC, id DESC LIMIT 1')->fetch();
-$cnt = db()->query('SELECT SUM(in_bag AND NOT is_sold AND NOT is_lost) bag, SUM(for_sale AND NOT is_sold AND NOT is_lost) sale, COUNT(*) total FROM discs')->fetch();
+$cnt = db()->query('SELECT SUM(in_bag) bag, SUM(for_sale) sale, COUNT(*) total FROM discs WHERE is_sold = 0 AND is_lost = 0')->fetch();
 $inq = (int)db()->query('SELECT COUNT(*) FROM inquiries WHERE handled = 0')->fetchColumn();
 $seasonEv = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y'))->fetchColumn();
 $wins = (int)db()->query('SELECT COUNT(*) FROM events WHERE year = ' . (int)date('Y') . ' AND place = "1."')->fetchColumn();

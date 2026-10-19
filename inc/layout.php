@@ -40,7 +40,7 @@ function public_start(string $title): void {
        . '<meta name="claude:viewport-fit-sides" content="cover"><title>' . h($title) . '</title>'
        . '<link rel="icon" href="assets/icon.svg" type="image/svg+xml">'
        . '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter+Tight:wght@400;500;600&display=swap">'
-       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"></head><body style="padding-bottom:48px"><div class="pub">';
+       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"></head><body style="padding-bottom:96px"><div class="pub">';
 }
 function public_end(): void { echo '</div><script src="' . asset('assets/app.js') . '"></script></body></html>'; }
 

@@ -13,7 +13,7 @@ Osobní mobilní PWA aplikace Martina pro disc golf na **discgolf.marmal.cz** (P
 ## Pravidla
 - `config.php` (hesla DB, GitHub token, setup_key) a `uploads/` do gitu **nikdy**.
 - `declare(strict_types=1)`; časy z PHP (`now()`, Europe/Prague), ne `NOW()` z DB.
-- Veřejné jsou jen `prodej.php` a `login.php`/`setup.php`; vše ostatní `require_login()`. Každý POST kontroluje `csrf_check()`, AJAX hlavičku `X-CSRF`.
+- Veřejné jsou jen `prodej.php` (adresa `prodej.html`) a `login.php`/`setup.php`; vše ostatní `require_login()`. Každý POST kontroluje `csrf_check()`, AJAX hlavičku `X-CSRF`.
 - Vzhled: tokeny a komponenty v `assets/app.css` (světlý + tmavý režim), mobil 390 px první, spodní navigace. Statistiky jsou v `assets/stats.js` (data z `inc/stats.php`).
 - Komunikace s Martinem česky.
 

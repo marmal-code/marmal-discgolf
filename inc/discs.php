@@ -3,12 +3,28 @@ declare(strict_types=1);
 
 const CATEGORIES = ['putter', 'approach', 'midrange', 'fairway', 'distance'];
 
-function disc_status(array $d): string {
-    if ($d['is_lost']) return 'lost';
-    if ($d['is_sold']) return 'sold';
-    if ($d['for_sale']) return 'sale';
-    return $d['in_bag'] ? 'bag' : 'other';
+/** Štítky (příznaky disku) v pořadí řazení: klíč => [sloupec v DB, název]. */
+const TAGS = [
+    'bag'   => ['in_bag',   'V bagu'],
+    'train' => ['training', 'Trénink'],
+    'test'  => ['testing',  'Testuji'],
+    'lost'  => ['is_lost',  'Ztraceno'],
+    'sale'  => ['for_sale', 'Na prodej'],
+    'sold'  => ['is_sold',  'Prodáno'],
+];
+
+/** Klíče štítků, které disk má (v pořadí TAGS). */
+function disc_tags(array $d): array {
+    $out = [];
+    foreach (TAGS as $k => [$col]) if (!empty($d[$col])) $out[] = $k;
+    return $out;
 }
+function disc_primary_tag(array $d): ?string { return disc_tags($d)[0] ?? null; }
+/** Aktivní disk = není ztracený ani prodaný (do celkového počtu se počítají jen takové). */
+function disc_active(array $d): bool { return !$d['is_lost'] && !$d['is_sold']; }
+
+/** SQL ORDER BY: skupiny podle štítků, pak speed ↑, turn ↑, fade ↑. */
+const DISC_ORDER = 'CASE WHEN in_bag=1 THEN 1 WHEN training=1 THEN 2 WHEN testing=1 THEN 3 WHEN is_lost=1 THEN 4 WHEN for_sale=1 THEN 5 WHEN is_sold=1 THEN 6 ELSE 7 END, speed, turn, fade, brand, model, id';
 
 /** Zmenší nahranou fotku (max 900 px, JPEG) do uploads/discs/. Vrací relativní cestu nebo null. */
 function save_disc_image(array $file): ?string {
@@ -42,12 +58,16 @@ function save_disc_image(array $file): ?string {
 function disc_form_values(array $in): array {
     $f = fn($k) => (float)str_replace(',', '.', (string)($in[$k] ?? '0'));
     $cat = in_array($in['category'] ?? '', CATEGORIES, true) ? $in['category'] : 'putter';
-    return [
+    $v = [
         'brand' => mb_substr(trim((string)($in['brand'] ?? '')), 0, 50), 'model' => mb_substr(trim((string)($in['model'] ?? '')), 0, 50),
         'category' => $cat, 'speed' => $f('speed'), 'glide' => $f('glide'), 'turn' => $f('turn'), 'fade' => $f('fade'),
         'weight' => ($in['weight'] ?? '') !== '' ? (int)$in['weight'] : null, 'plastic' => mb_substr(trim((string)($in['plastic'] ?? '')), 0, 50) ?: null,
-        'in_bag' => !empty($in['in_bag']) ? 1 : 0, 'note' => trim((string)($in['note'] ?? '')) ?: null,
+        'in_bag' => !empty($in['in_bag']) ? 1 : 0, 'training' => !empty($in['training']) ? 1 : 0, 'testing' => !empty($in['testing']) ? 1 : 0,
+        'note' => trim((string)($in['note'] ?? '')) ?: null,
         'is_lost' => !empty($in['is_lost']) ? 1 : 0, 'is_sold' => !empty($in['is_sold']) ? 1 : 0, 'for_sale' => !empty($in['for_sale']) ? 1 : 0,
         'price' => ($in['price'] ?? '') !== '' ? (int)$in['price'] : null,
     ];
+    // prodaný / ztracený disk už není v bagu ani na prodej
+    if ($v['is_sold'] || $v['is_lost']) { $v['in_bag'] = 0; $v['for_sale'] = 0; }
+    return $v;
 }

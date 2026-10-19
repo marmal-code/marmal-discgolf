@@ -65,13 +65,23 @@ page_start('Nastavení', 'nastaveni.php');
 
 <section class="card">
   <h2>Veřejný prodej disků</h2>
-  <p class="muted" style="margin-top:0">Adresa: <a href="prodej.php" target="_blank" rel="noopener"><?= h((is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . dirname($_SERVER['SCRIPT_NAME'] ?? '/') ) ?>/prodej.php</a></p>
+  <p class="muted" style="margin-top:0">Adresa: <a href="prodej.html" target="_blank" rel="noopener"><?= h((is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . dirname($_SERVER['SCRIPT_NAME'] ?? '/') ) ?>/prodej.html</a></p>
   <form method="post"><?= csrf_field() ?><input type="hidden" name="a" value="prodej">
     <div class="field"><label>Nadpis stránky</label><input type="text" name="sale_title" value="<?= h(setting('sale_title', 'Disky na prodej')) ?>"></div>
     <div class="field"><label>Úvodní text</label><textarea name="sale_intro"><?= h(setting('sale_intro', 'Nabídka vyřazených a přebytečných disků k odkupu. Budu rád, když budou lítat, proto držím ceny nízko. Vyber si disk, klepni na „Mám zájem“ a domluvíme se na předání – osobní odběr, Zásilkovna, Alzabox, doprava jde za tebou.')) ?></textarea></div>
     <div class="field"><label>Kontakt (zobrazí se veřejně)</label><input type="text" name="sale_contact" value="<?= h(setting('sale_contact', 'WhatsApp 724 257 563 · info@marmal.cz')) ?>"></div>
     <div class="field"><label>E‑mail pro upozornění na novou poptávku</label><input type="email" name="notify_email" value="<?= h(setting('notify_email', '')) ?>" placeholder="prázdné = jen v aplikaci"></div>
     <button class="btn">Uložit</button></form>
+</section>
+
+<section class="card">
+  <h2>Upozornění na mobilu</h2>
+  <p class="muted" style="margin-top:0">Když někdo pošle poptávku z veřejného prodeje, přijde ti notifikace. Zapni to na každém zařízení zvlášť. Na iPhonu to funguje jen v aplikaci přidané na plochu (iOS 16.4+).</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pushon" type="button">Zapnout na tomto zařízení</button><button class="btn ghost" id="pushtest" type="button">Poslat zkušební upozornění</button></div>
+  <p class="muted" id="pushmsg" style="margin-bottom:0"></p>
+  <?php $subs = db()->query('SELECT id, name, created FROM push_subs ORDER BY id')->fetchAll(); if ($subs): ?>
+  <ul class="sellist" style="margin-top:10px"><?php foreach ($subs as $s) echo '<li><span>' . h($s['name']) . ' <span class="muted">· od ' . h(date('j. n. Y', strtotime($s['created']))) . '</span></span><button class="btn sm danger" type="button" data-pushrm="' . (int)$s['id'] . '">Odebrat</button></li>'; ?></ul>
+  <?php endif; ?>
 </section>
 
 <section class="card">
@@ -84,5 +94,6 @@ page_start('Nastavení', 'nastaveni.php');
 </section>
 <script>window.CSRF = <?= json_encode(csrf()) ?>;</script>
 <script src="<?= h(asset('assets/passkey.js')) ?>"></script>
+<script src="<?= h(asset('assets/push.js')) ?>"></script>
 <p><a class="btn ghost" href="logout.php">Odhlásit se</a></p>
 <?php page_end('nastaveni.php');
