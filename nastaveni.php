@@ -12,6 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (['sale_title', 'sale_intro', 'sale_contact', 'notify_email'] as $k) set_setting($k, trim((string)($_POST[$k] ?? '')));
         flash('Nastavení prodeje uloženo.'); redirect('nastaveni.php');
     }
+    if ($a === 'cadg_sync') {
+        require_once __DIR__ . '/inc/cadg.php'; if (isset($_POST['cadg_user_id'])) set_setting('cadg_user_id', (string)(int)$_POST['cadg_user_id']);
+        $r = cadg_profile_sync(); flash($r['msg'], $r['ok'] ? 'ok' : 'err'); redirect('nastaveni.php#cadg');
+    }
     if ($a === 'health_save') {
         $url = trim((string)($_POST['health_url'] ?? ''));
         if ($url !== '' && !preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
@@ -106,6 +110,15 @@ page_start('Nastavení', 'nastaveni.php');
   <?php $subs = db()->query('SELECT id, name, created FROM push_subs ORDER BY id')->fetchAll(); if ($subs): ?>
   <ul class="sellist" style="margin-top:10px"><?php foreach ($subs as $s) echo '<li><span>' . h($s['name']) . ' <span class="muted">· od ' . h(date('j. n. Y', strtotime($s['created']))) . '</span></span><button class="btn sm danger" type="button" data-pushrm="' . (int)$s['id'] . '">Odebrat</button></li>'; ?></ul>
   <?php endif; ?>
+</section>
+
+<section class="card" id="cadg">
+  <h2>Profil z Českého discgolfu</h2>
+  <p class="sub" style="margin-top:0">Rating PDGA a iDG, čísla, členství a rozhodčí se samy stahují z ceskydiscgolf.cz (veřejný profil, bez hesla) jednou za 12 hodin a ukazují se na Přehledu. Při změně se aktualizuje i rating v historii.</p>
+  <form method="post" class="row2"><?= csrf_field() ?><input type="hidden" name="a" value="cadg_sync">
+    <div class="field"><label>ČADG id (najde se samo)</label><input type="number" name="cadg_user_id" value="<?= h((string)setting('cadg_user_id', '')) ?>" placeholder="automaticky"></div>
+    <div class="field" style="align-self:end"><button class="btn">Aktualizovat profil</button></div></form>
+  <?php if (setting('cadg_err', '')): ?><p class="sub" style="color:var(--bad)"><?= h((string)setting('cadg_err')) ?></p><?php elseif (setting('cadg_last', '')): ?><p class="sub" style="margin-bottom:0">Naposledy: <?= h(date('j. n. H:i', strtotime((string)setting('cadg_last')))) ?></p><?php endif; ?>
 </section>
 
 <section class="card" id="zdravi">

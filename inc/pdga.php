@@ -122,16 +122,17 @@ function pdga_map(array $f): array {
 
 /** Uloží namapovaný import. $eventId = existující turnaj (aktualizace), jinak se založí nový. Vrací id turnaje. */
 function pdga_save(array $m, ?int $eventId): int {
-    $e = $m['event'];
-    if (!$eventId) { $q = db()->prepare('SELECT id FROM events WHERE pdga_id = ?'); $q->execute([$m['pdga_id']]); $eventId = (int)$q->fetchColumn() ?: null; }
+    $e = $m['event']; $cadg = !empty($m['cadg_id']);           // import z ČADG: turnaj se hledá podle cadg_id, ne podle pdga_id
+    $isPdga = $cadg ? (int)!empty($e['is_pdga']) : 1;
+    if (!$eventId) { $q = db()->prepare($cadg ? 'SELECT id FROM events WHERE cadg_id = ?' : 'SELECT id FROM events WHERE pdga_id = ?'); $q->execute([$cadg ? $m['cadg_id'] : $m['pdga_id']]); $eventId = (int)$q->fetchColumn() ?: null; }
     if ($eventId) {
-        db()->prepare('UPDATE events SET status = "done", pdga = 1, pdga_id = ?, division = COALESCE(division, ?), place = ?, pdga_rating = COALESCE(?, pdga_rating), holes = ?, dist = COALESCE(?, dist), unit = ?,
-            date = COALESCE(date, ?), end_date = COALESCE(end_date, ?), venue = COALESCE(venue, ?), city = COALESCE(city, ?) WHERE id = ?')
-            ->execute([$m['pdga_id'], $m['division'], $e['place'], $e['pdga_rating'], $e['holes'], $e['dist'], $e['unit'], $e['date'], $e['end_date'], $e['venue'], $e['city'], $eventId]);
+        db()->prepare('UPDATE events SET status = "done", pdga = ?, pdga_id = COALESCE(?, pdga_id), cadg_id = COALESCE(?, cadg_id), division = COALESCE(division, ?), place = ?, pdga_rating = COALESCE(?, pdga_rating), holes = ?, dist = COALESCE(?, dist), unit = ?,
+            date = COALESCE(date, ?), end_date = COALESCE(end_date, ?), venue = COALESCE(venue, ?), city = COALESCE(city, ?), lat = COALESCE(lat, ?), lon = COALESCE(lon, ?), event_rating = COALESCE(?, event_rating) WHERE id = ?')
+            ->execute([$isPdga, $m['pdga_id'] ?? null, $m['cadg_id'] ?? null, $m['division'], $e['place'], $e['pdga_rating'], $e['holes'], $e['dist'], $e['unit'], $e['date'], $e['end_date'], $e['venue'], $e['city'], $e['lat'] ?? null, $e['lon'] ?? null, $e['event_rating'] ?? null, $eventId]);
     } else {
         $year = $e['date'] ? (int)substr($e['date'], 0, 4) : (int)date('Y');
-        db()->prepare('INSERT INTO events (year, slug, date, end_date, name, short, series, division, place, pdga_rating, holes, dist, unit, pdga, pdga_id, venue, city, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,"done")')
-            ->execute([$year, event_unique_slug($year, $e['short']), $e['date'], $e['end_date'], $e['name'], $e['short'], null, $m['division'], $e['place'], $e['pdga_rating'], $e['holes'], $e['dist'], $e['unit'], $m['pdga_id'], $e['venue'], $e['city']]);
+        db()->prepare('INSERT INTO events (year, slug, date, end_date, name, short, series, division, place, pdga_rating, holes, dist, unit, pdga, pdga_id, cadg_id, venue, city, lat, lon, event_rating, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"done")')
+            ->execute([$year, event_unique_slug($year, $e['short']), $e['date'], $e['end_date'], $e['name'], $e['short'], null, $m['division'], $e['place'], $e['pdga_rating'], $e['holes'], $e['dist'], $e['unit'], $isPdga, $m['pdga_id'] ?? null, $m['cadg_id'] ?? null, $e['venue'], $e['city'], $e['lat'] ?? null, $e['lon'] ?? null, $e['event_rating'] ?? null]);
         $eventId = (int)db()->lastInsertId(); event_default_todos($eventId);
     }
     $multi = $e['date'] && $e['end_date'] && $e['end_date'] > $e['date'];
