@@ -14,22 +14,22 @@ const ICONS = [
     'cog'   => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
 ];
 const NAV = [
-    'index.php' => ['Přehled', 'home'], 'bag.php' => ['Bag', 'bag'], 'turnaje.php' => ['Turnaje', 'trophy'], 'trenink.php' => ['Trénink', 'timer'], 'cviceni.php' => ['Cvičení', 'disc'], 'statistiky.php' => ['Statistiky', 'chart'],
+    'bag.php' => ['Bag', 'bag'], 'turnaje.php' => ['Turnaje', 'trophy'], 'trenink.php' => ['Trénink', 'timer'], 'cviceni.php' => ['Cvičení', 'disc'], 'statistiky.php' => ['Statistiky', 'chart'],
     'nastaveni.php' => ['Nastavení', 'cog'],
 ];
 
 function page_start(string $title, string $active = ''): void {
     $f = flash();
     echo '<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-       . '<meta name="theme-color" content="#F3F0E8"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="claude:viewport-fit-sides" content="cover">'
+       . '<meta name="theme-color" content="#EEF2F6"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="claude:viewport-fit-sides" content="cover">'
        . '<title>' . h($title) . ' · Discgolf</title>'
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="assets/icon-192.png">'
        . '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
        . '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter+Tight:wght@400;500;600&display=swap">'
-       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"></head><body><div class="wrap">'
+       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"><script>try{if(localStorage.getItem("dgtheme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script></head><body><div class="wrap">'
        . '<div class="topbar"><a class="brand" href="index.php"><i></i>Discgolf</a><nav class="dnav">';
     foreach (NAV as $href => [$label]) echo '<a href="' . $href . '"' . ($active === $href ? ' class="on"' : '') . '>' . h($label) . '</a>';
-    echo '</nav></div><div class="page">';
+    echo '</nav><button type="button" class="themebtn" id="themebtn" aria-label="Přepnout světlý / tmavý režim" title="Světlý / tmavý režim"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20 14A8 8 0 0110 4a8 8 0 1010 10z"/></svg></button></div><div class="page' . ($active === 'index.php' ? ' dash-page' : '') . '">';
     if ($f) echo '<div class="flash' . ($f[1] === 'err' ? ' err' : '') . '">' . h($f[0]) . '</div>';
 }
 function page_end(string $active = ''): void {
@@ -42,7 +42,7 @@ function public_start(string $title): void {
        . '<meta name="claude:viewport-fit-sides" content="cover"><title>' . h($title) . '</title>'
        . '<link rel="icon" href="assets/icon.svg" type="image/svg+xml">'
        . '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter+Tight:wght@400;500;600&display=swap">'
-       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"></head><body style="padding-bottom:96px"><div class="pub">';
+       . '<link rel="stylesheet" href="' . asset('assets/app.css') . '"><script>try{if(localStorage.getItem("dgtheme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script></head><body style="padding-bottom:96px"><div class="pub">';
 }
 function public_end(): void { echo '</div><script src="' . asset('assets/app.js') . '"></script></body></html>'; }
 

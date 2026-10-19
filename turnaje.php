@@ -12,9 +12,10 @@ $done = db()->query('SELECT e.*, (SELECT COUNT(*) FROM rounds r WHERE r.event_id
 page_start('Turnaje', 'turnaje.php');
 ?>
 <div class="ph">Turnaje <small><?= count($plan) ?> plánovaných · <?= count($done) ?> odehraných</small></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="turnaj.php?new=1">+ Nový turnaj</a><a class="btn ghost" href="import.php">Import z PDGA Live</a></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="turnaj.php?new=1">+ Nový turnaj</a><a class="btn ghost" href="import.php">Import výsledků</a></div>
 
 <?php if ($plan): ?><h2 style="margin:18px 0 8px">Plán</h2>
+<div class="list">
 <?php foreach ($plan as $e):
     $days = $e['date'] ? (int)floor((strtotime($e['date']) - strtotime(date('Y-m-d'))) / 86400) : null; ?>
   <a class="card ev" href="turnaj.php?id=<?= (int)$e['id'] ?>" style="text-decoration:none;display:block">
@@ -22,14 +23,15 @@ page_start('Turnaje', 'turnaje.php');
     <div class="sub"><?= $e['date'] ? h(fmt_date($e['date'])) . ($e['end_date'] && $e['end_date'] !== $e['date'] ? '–' . h(fmt_date($e['end_date'])) : '') . ' · ' : '' ?><?= h((string)($e['venue'] ?: $e['city'] ?: '')) ?></div>
     <div class="pills" style="margin-top:6px"><span class="pill"><?= (int)$e['bag_n'] ?> disků v bagu</span><span class="pill"><?= (int)$e['todo_done'] ?>/<?= (int)$e['todo_n'] ?> úkolů</span><?php if ($e['goal']): ?><span class="pill g">cíl: <?= h($e['goal']) ?></span><?php endif; ?></div>
   </a>
-<?php endforeach; endif; ?>
+<?php endforeach; ?></div><?php endif; ?>
 
 <h2 style="margin:18px 0 8px">Odehrané</h2>
 <?php if (!$done) echo '<div class="card empty"><b>Zatím nic</b>Odehrané turnaje se ukážou tady a ve statistikách.</div>'; ?>
+<div class="list">
 <?php foreach ($done as $e): ?>
   <a class="card ev" href="turnaj.php?id=<?= (int)$e['id'] ?>" style="text-decoration:none;display:block">
     <div class="row"><strong><?= h($e['name']) ?></strong><span class="place<?= $e['place'] === '1.' ? ' win' : '' ?>"><?= h((string)$e['place']) ?></span></div>
     <div class="sub"><?= h(fmt_date($e['date'])) ?> · <?= (int)$e['rn'] ?> kol · celkem <?= $e['total'] > 0 ? '+' . $e['total'] : ($e['total'] < 0 ? '−' . abs((int)$e['total']) : 'E') ?><?= $e['venue'] ? ' · ' . h($e['venue']) : '' ?></div>
   </a>
-<?php endforeach; ?>
+<?php endforeach; ?></div>
 <?php page_end('turnaje.php');

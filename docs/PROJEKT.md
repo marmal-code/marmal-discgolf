@@ -48,6 +48,7 @@
 | v9 | Záložka Cvičení: disc golfová cvičení (Zlatá zóna, Must-Make, Jednadvacet, Tlakový hrnec, Risk je zisk) zkopírovaná z Moje Zdraví, hraní, historie s datem, statistiky a grafy, napojení na plán (odškrtne putting) a na přípravu před turnaji; výsledky se posílají do Moje Zdraví, historie ze Zdraví se jednorázově načte. Menu má 7 položek. Migrace 012 (`drill_sessions`). Vyžaduje v16 Moje Zdraví. |
 | v10 | Oprava importu z ČADG: odkaz stačí z libovolné divize (nebo i bez divize) – aplikace projde všechny divize turnaje a najde tě v té, kde jsi hrál. Před importem si sama dohledá ČADG id. Místo konání se bere z hřiště turnaje. |
 | v11 | Pevné nastavení hráče (Martin Malý, ČADG číslo 2914 → interní id 1930, PDGA 113434; migrace 013). V Nastavení se zadává ČADG číslo, id se ověří podle `old_id`, špatné číslo se nepřijme. Profil na Přehledu přepracován podle ČADG (foto, klub, město, stát, členství, bloky ČADG a PDGA, historie členství). |
+| v12 | Vizuální přepracování: sportovní barevný vzhled (gradienty, zaoblené karty, stíny), světlý režim jako výchozí + přepínač světlý/tmavý v liště (uloženo v prohlížeči), Dashboard jako bento mřížka na více sloupců s grafem ratingu a kroužkem k cíli, položka „Přehled“ z menu zrušena (úvodní stránka přes logo), tlačítko „Import výsledků“, seznamy turnajů ve dvou sloupcích na PC. |
 
 ## Plán
 - v2: ruční zápis turnaje a kol formulářem, počasí a podmínky (automaticky + úprava), bag na turnaj, plán na turnaj

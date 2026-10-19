@@ -1,4 +1,12 @@
 (function () {
+  // přepínač světlý / tmavý režim (výchozí je světlý)
+  var tb = document.getElementById('themebtn');
+  if (tb) tb.addEventListener('click', function () {
+    var dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark'); else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('dgtheme', dark ? 'dark' : 'light'); } catch (e) {}
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', dark ? '#0D1218' : '#EEF2F6');
+  });
   // potvrzení smazání
   document.addEventListener('submit', function (e) {
     var m = e.target.getAttribute && e.target.getAttribute('data-confirm');

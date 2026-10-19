@@ -138,7 +138,7 @@ page_start($e ? $e['name'] : 'Nový turnaj', 'turnaje.php');
       <div class="row"><strong>Kolo <?= (int)$r['idx'] + 1 ?><?= $r['rdate'] ? ' · ' . h(fmt_date($r['rdate'])) : '' ?></strong><span class="place"><?= $r['score'] > 0 ? '+' . $r['score'] : ($r['score'] < 0 ? '−' . abs((int)$r['score']) : 'E') ?></span></div>
       <div class="sub"><?= (int)$r['throws'] ?> hodů<?= $r['rating'] ? ' · rating ' . (int)$r['rating'] : '' ?><?= weather_line($r) ? ' · ' . h(weather_line($r)) : '' ?></div></a>
   <?php endforeach; ?>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="kolo.php?event=<?= $id ?>">+ Přidat kolo</a><a class="btn ghost" href="import.php?event=<?= $id ?>">Načíst z PDGA Live</a></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="kolo.php?event=<?= $id ?>">+ Přidat kolo</a><a class="btn ghost" href="import.php?event=<?= $id ?>">Import výsledků</a></div>
   <?php if ($rounds): ?><p class="sub" style="margin-bottom:0">Celkem <?= $e['total'] > 0 ? '+' . $e['total'] : ($e['total'] < 0 ? '−' . abs((int)$e['total']) : 'E') ?> po <?= count($rounds) ?> kolech. Statistiky se přepočítají samy.</p><?php endif; ?>
 </section>
 
