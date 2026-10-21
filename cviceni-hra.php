@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $var = array_key_exists((string)($_GET['v'] ?? ''), $D['variants']) ? (string)$_GET['v'] : 'normal';
 $sessions = drill_list($key, 40, $var);
-$sum = array_map(fn($r) => json_decode((string)$r['summary'], true) ?: [], $sessions);
+$sum = array_map(function ($r) { $j = json_decode((string)$r['summary'], true); return is_array($j) ? $j : []; }, $sessions);
 $q = db()->prepare('SELECT variant, COUNT(*) n FROM drill_sessions WHERE drill = ? GROUP BY variant'); $q->execute([$key]); $played = $q->fetchAll(PDO::FETCH_KEY_PAIR);
 
 function avg_of(array $rows, callable $f, int $n = 0): ?float {
@@ -46,7 +46,7 @@ function avg_of(array $rows, callable $f, int $n = 0): ?float {
 $fmt = fn($v, $d = 0, $suf = '') => $v === null ? '–' : drill_num((float)$v, $d) . $suf;
 $best = drill_best($key, $var);
 $stats = [['Nejlepší', $fmt($best, 1, ' ' . $D['unit'])], ['Průměr posledních 5', $fmt(avg_of($sessions, fn($r) => (float)$r['score'], 5), 1, ' ' . $D['unit'])], ['Odehráno', count($sessions) . '×']];
-switch ($key) {
+try { switch ($key) {
     case 'zlata_zona':
         $stats[] = ['Do zóny (průměr)', $fmt(avg_of($sum, fn($s) => $s['zonePct'] ?? null), 0, ' %')];
         $stats[] = ['Zóna BH / FH', $fmt(avg_of($sum, fn($s) => $s['bhZone'] ?? null), 0, ' %') . ' / ' . $fmt(avg_of($sum, fn($s) => $s['fhZone'] ?? null), 0, ' %')];
@@ -74,7 +74,7 @@ switch ($key) {
         $stats[] = ['Hry bez missu', array_sum(array_map(fn($s) => (int)($s['clean'] ?? 0), $sum)) . '×'];
         foreach ([5, 6, 7] as $d) { $n = array_sum(array_map(fn($s) => (int)($s['ch'][$d] ?? 0), $sum)); $stats[] = ['Volba ' . $d . ' m', $n . '× · úspěšnost ' . $fmt(avg_of($sum, fn($s) => ($s['ch'][$d] ?? 0) ? ($s['pct'][$d] ?? null) : null), 0, ' %')]; }
         break;
-}
+} } catch (Throwable $e) { /* statistiky jsou doplněk, hra musí fungovat vždy */ }
 page_start($D['name'], 'cviceni.php');
 ?>
 <div class="ph"><?= $D['icon'] ?> <?= h($D['name']) ?> <small><a href="cviceni.php">← Cvičení</a></small></div>
@@ -89,6 +89,7 @@ page_start($D['name'], 'cviceni.php');
     <p class="sub" style="margin-bottom:0">Rozehraná hra se ukládá průběžně v telefonu – když zavřeš stránku, pokračuješ tam, kde jsi skončil.</p>
   </div>
   <div id="drill-play" hidden>
+    <div class="resume" id="d-resume" hidden>Rozehraná hra (začátek <span id="d-resume-t"></span>) – pokračuješ tam, kde jsi skončil. <button type="button" class="btn sm ghost" id="d-restart">Začít znovu</button></div>
     <div class="dstatus"><div class="dbig"><b id="d-big">0</b><span id="d-biglabel"></span></div>
       <div class="dinfo"><div id="d-line"></div><div id="d-sub" class="sub"></div><div id="d-extra" class="sub"></div></div></div>
     <div id="d-buttons" class="dbtns"></div>
@@ -99,7 +100,8 @@ page_start($D['name'], 'cviceni.php');
   <form method="post" id="d-save" hidden><?= csrf_field() ?><input type="hidden" name="a" value="save"><input type="hidden" name="drill" value="<?= h($key) ?>">
     <input type="hidden" name="variant"><input type="hidden" name="events"><input type="hidden" name="summary"><input type="hidden" name="score"><input type="hidden" name="minutes"></form>
 </section>
-
+<script src="<?= h(asset('assets/drills.js')) ?>"></script>
+<?php ob_start(); try { ?>
 <section class="card"><h3 style="margin:0 0 6px">Statistiky <small class="muted" style="font-weight:500"><?= $D['better'] === 'up' ? '↑ víc je lépe' : '↓ méně je lépe' ?></small></h3>
   <?php if ($D['variants'] && count($played) > 0): ?><div class="pills" style="margin-bottom:8px"><?php foreach ($D['variants'] as $vk => $vl): if (!isset($played[$vk]) && $vk !== $var) continue; ?>
     <a class="pill<?= $vk === $var ? ' g' : '' ?>" href="cviceni-hra.php?k=<?= h($key) ?>&v=<?= h($vk) ?>" style="text-decoration:none;color:inherit"><?= h(explode(' (', $vl)[0]) ?> (<?= (int)($played[$vk] ?? 0) ?>)</a><?php endforeach; ?></div><?php endif; ?>
@@ -128,5 +130,5 @@ page_start($D['name'], 'cviceni.php');
     <h4>Jak měřit pokrok</h4><ul class="sub"><?php foreach ($D['progress'] as $x) echo '<li>' . h($x) . '</li>'; ?></ul>
     <p class="sub">Podle tréninkových materiálů Discgolf klubu Kladno (Horníci Kladno).</p></details>
 </section>
-<script src="<?= h(asset('assets/drills.js')) ?>"></script>
+<?php ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); echo '<section class="card"><p class="sub" style="margin:0">Statistiky a historii se teď nepodařilo zobrazit.</p></section>'; } ?>
 <?php page_end('cviceni.php');

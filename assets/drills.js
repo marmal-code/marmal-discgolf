@@ -170,20 +170,23 @@
     var storeKey = 'drill:' + key;
     var st = null;
     try { st = JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) {}
-    if (!st || !st.started) st = { started: 0, variant: variantSel ? variantSel.value : 'normal', events: [] };
+    if (!st || typeof st !== 'object' || !st.started || !Array.isArray(st.events) || Date.now() - st.started > 6 * 3600 * 1000) st = { started: 0, variant: variantSel ? variantSel.value : 'normal', events: [] };
+    if (variantSel && !Array.prototype.some.call(variantSel.options, function (o) { return o.value === st.variant; })) st.variant = variantSel.value;
     var persist = function () { try { localStorage.setItem(storeKey, JSON.stringify(st)); } catch (e) {} };
 
     var $ = function (id) { return document.getElementById(id); };
     var compute = function () { var s = def.init(st.variant); st.events.forEach(function (ev) { def.apply(s, ev); }); return s; };
 
     var render = function () {
-      var s = compute();
+      var s;
+      try { s = compute(); } catch (e) { st = { started: 0, variant: st.variant, events: [] }; persist(); s = compute(); }
       var active = st.started > 0;
       $('drill-start').hidden = active;
       $('drill-play').hidden = !active;
       if (variantSel) variantSel.value = st.variant;
       if (!active) return;
       var v = def.status(s);
+      var rs = $('d-resume'); if (rs) { rs.hidden = !st.events.length; var tm = new Date(st.started); $('d-resume-t').textContent = ('0' + tm.getHours()).slice(-2) + ':' + ('0' + tm.getMinutes()).slice(-2); }
       $('d-big').innerHTML = v.big;
       $('d-biglabel').textContent = v.bigLabel;
       $('d-line').innerHTML = v.line || '';
@@ -213,9 +216,14 @@
       st = { started: Date.now(), variant: variantSel ? variantSel.value : 'normal', events: [] }; persist(); render();
     });
     $('d-undo').addEventListener('click', function () { st.events.pop(); persist(); render(); });
-    $('d-cancel').addEventListener('click', function () {
-      if (!confirm('Zahodit rozehranou hru?')) return;
-      st = { started: 0, variant: st.variant, events: [] }; persist(); render();
+    var armed = 0, cancelBtns = [$('d-cancel'), $('d-restart')];
+    cancelBtns.forEach(function (btn) {
+      if (!btn) return; var label = btn.textContent;
+      btn.addEventListener('click', function () {
+        if (!armed) { armed = 1; btn.textContent = 'Opravdu? Klepni znovu'; setTimeout(function () { armed = 0; btn.textContent = label; }, 3500); return; }
+        armed = 0; btn.textContent = label;
+        st = { started: 0, variant: st.variant, events: [] }; persist(); render();
+      });
     });
     $('d-finish').addEventListener('click', function () {
       var s = compute(), sum = def.summary(s);
