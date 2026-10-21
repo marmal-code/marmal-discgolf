@@ -55,7 +55,6 @@ try { switch ($key) {
         $stats[] = ['Do zóny (průměr)', $fmt(avg_of($sum, fn($s) => $s['zonePct'] ?? null), 0, ' %')];
         $stats[] = ['Zóna BH / FH', $fmt(avg_of($sum, fn($s) => $s['bhZone'] ?? null), 0, ' %') . ' / ' . $fmt(avg_of($sum, fn($s) => $s['fhZone'] ?? null), 0, ' %')];
         $stats[] = ['OB (průměr)', $fmt(avg_of($sum, fn($s) => $s['obPct'] ?? null), 0, ' %')];
-        foreach (dist_keys($sum, 'dist') as $d) $stats[] = ['Body z ' . $d . ' m (průměr za hru)', $fmt(avg_of($sum, fn($s) => $s['dist'][$d] ?? null), 1)];
         break;
     case 'must_make':
         $stats[] = ['Přihoz do C1', $fmt(avg_of($sum, fn($s) => $s['c1AppPct'] ?? null), 0, ' %')];
@@ -65,7 +64,6 @@ try { switch ($key) {
     case 'dvacetjedna':
         $stats[] = ['Resetů (průměr)', $fmt(avg_of($sum, fn($s) => $s['resets'] ?? null), 1)];
         $stats[] = ['Úspěšnost puttů', $fmt(avg_of($sum, fn($s) => $s['pct'] ?? null), 0, ' %')];
-        foreach (dist_keys($sum, 'by') as $d) $stats[] = ['Z ' . $d . ' m', $fmt(avg_of($sum, fn($s) => ($s['by'][$d] ?? 0) ?: null), 0, ' %')];
         break;
     case 'tlakovy_hrnec':
         $stats[] = ['Návratů zpět (průměr)', $fmt(avg_of($sum, fn($s) => $s['backs'] ?? null), 1)];
@@ -80,9 +78,9 @@ try { switch ($key) {
         break;
     case 'risk':
         $stats[] = ['Hry bez missu', array_sum(array_map(fn($s) => (int)($s['clean'] ?? 0), $sum)) . '×'];
-        foreach (dist_keys($sum, 'ch') as $d) { $n = array_sum(array_map(fn($s) => (int)($s['ch'][$d] ?? 0), $sum)); $stats[] = ['Volba ' . $d . ' m', $n . '× · úspěšnost ' . $fmt(avg_of($sum, fn($s) => ($s['ch'][$d] ?? 0) ? ($s['pct'][$d] ?? null) : null), 0, ' %')]; }
         break;
 } } catch (Throwable $e) { /* statistiky jsou doplněk, hra musí fungovat vždy */ }
+$byDist = []; try { $byDist = drill_by_distance($key, $sessions, $sum); } catch (Throwable $e) { $byDist = []; }
 page_start($D['name'], 'cviceni.php');
 ?>
 <div class="ph"><?= $D['icon'] ?> <?= h($D['name']) ?> <small><a href="cviceni.php">← Cvičení</a></small></div>
@@ -117,6 +115,8 @@ page_start($D['name'], 'cviceni.php');
   <div class="sub" style="margin-bottom:4px"><?= h($D['metric']) ?><?= $D['variants'] ? ' · ' . h($D['variants'][$var]) : '' ?></div>
   <?= line_chart(drill_points($key, 30, $var), $D['unit'], 150) ?>
   <div class="statlist"><?php foreach ($stats as [$l, $v]): ?><div><span><?= h($l) ?></span><b><?= $v ?></b></div><?php endforeach; ?></div>
+  <?php if ($byDist): ?><h3 style="margin:16px 0 6px">Podle vzdálenosti <small class="muted" style="font-weight:500;text-transform:none;letter-spacing:0">· ze zobrazené varianty</small></h3>
+    <div class="distlist"><?php foreach ($byDist as [$dm, $g, $txt]): ?><div class="dl"><b><?= h(drill_num($dm)) ?> m</b><span><?= h($txt) ?></span><small class="muted"><?= (int)$g ?>× hráno</small></div><?php endforeach; ?></div><?php endif; ?>
 </section>
 
 <section class="card"><h3 style="margin:0 0 6px">Historie <small class="muted" style="font-weight:500"><?= count($sessions) ? count($sessions) . '×' : '' ?></small></h3>
@@ -139,5 +139,5 @@ page_start($D['name'], 'cviceni.php');
     <h4>Jak měřit pokrok</h4><ul class="sub"><?php foreach ($D['progress'] as $x) echo '<li>' . h($x) . '</li>'; ?></ul>
     <p class="sub">Podle tréninkových materiálů Discgolf klubu Kladno (Horníci Kladno).</p></details>
 </section>
-<?php ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); echo '<section class="card"><p class="sub" style="margin:0">Statistiky a historii se teď nepodařilo zobrazit.</p></section>'; } ?>
+<?php ob_end_flush(); } catch (Throwable $e) { ob_end_clean(); error_log('cviceni-hra: ' . $e->getMessage() . ' @' . basename($e->getFile()) . ':' . $e->getLine()); echo '<section class="card"><p class="sub" style="margin:0">Statistiky a historii se teď nepodařilo zobrazit. <small>(' . h(mb_substr($e->getMessage(), 0, 160)) . ' – ' . h(basename($e->getFile())) . ':' . (int)$e->getLine() . ')</small></p></section>'; } ?>
 <?php page_end('cviceni.php');

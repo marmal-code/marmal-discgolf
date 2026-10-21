@@ -35,14 +35,15 @@
 
     // ---------- MUST-MAKE ----------
     must_make: {
-      init: function () { return { round: 0, pos: 0, phase: 'a', app: null, cur: 0, rounds: [], nA: 0, c1: 0, c2: 0, out: 0, c1P: 0, c1M: 0, done: false }; },
+      dists: [35, 42, 48, 54, 60], free: true,
+      init: function (v, ds) { ds = ds || this.dists; var pd = {}; ds.forEach(function (d) { pd[d] = { n: 0, c1: 0, p: 0, m: 0 }; }); return { ds: ds, pd: pd, round: 0, pos: 0, phase: 'a', app: null, cur: 0, rounds: [], nA: 0, c1: 0, c2: 0, out: 0, c1P: 0, c1M: 0, done: false }; },
       apply: function (s, v) {
         if (s.phase === 'a') {
-          s.app = v; s.nA++;
+          s.app = v; s.nA++; var q0 = s.pd[s.ds[s.pos]]; q0.n++; if (v === 'c1') q0.c1++;
           if (v === 'c1') { s.c1++; s.cur += 1; } else if (v === 'c2') { s.c2++; } else { s.out++; s.cur -= 1; }
           s.phase = 'p';
         } else {
-          if (s.app === 'c1') { s.c1P++; if (v) { s.c1M++; s.cur += 2; } else { s.cur -= 2; } }
+          if (s.app === 'c1') { var q1 = s.pd[s.ds[s.pos]]; q1.p++; if (v) q1.m++; s.c1P++; if (v) { s.c1M++; s.cur += 2; } else { s.cur -= 2; } }
           s.phase = 'a'; s.pos++;
           if (s.pos === 5) { s.rounds.push(s.cur); s.cur = 0; s.pos = 0; s.round++; if (s.round === 5) s.done = true; }
         }
@@ -54,7 +55,7 @@
       status: function (s) {
         var total = s.rounds.reduce(function (a, b) { return a + b; }, 0);
         if (s.done) return { big: total, bigLabel: 'bodů celkem', line: 'Hotovo – 5 kol' };
-        return { big: s.cur, bigLabel: 'bodů v kole', line: 'Kolo ' + (s.round + 1) + ' · pozice ' + (s.pos + 1) + '/5',
+        return { big: s.cur, bigLabel: 'bodů v kole', line: 'Kolo ' + (s.round + 1) + ' · pozice ' + (s.pos + 1) + '/5 · <b>' + s.ds[s.pos] + ' m</b>',
           sub: s.phase === 'a' ? '<b>Přihoz</b> – kam dopadl?' : '<b>Putt</b> po přihozu do ' + (s.app === 'c1' ? 'C1' : s.app === 'c2' ? 'C2' : 'mimo C2'),
           extra: s.rounds.length ? 'Kola: ' + s.rounds.join(' · ') : '' };
       },
@@ -64,7 +65,7 @@
       summary: function (s) {
         var total = s.rounds.reduce(function (a, b) { return a + b; }, 0);
         return { score: s.rounds.length ? Math.round(total / s.rounds.length * 10) / 10 : 0, total: total, rounds: s.rounds,
-          c1AppPct: pct(s.c1, s.nA), c1PuttPct: pct(s.c1M, s.c1P), outPct: pct(s.out, s.nA) };
+          c1AppPct: pct(s.c1, s.nA), c1PuttPct: pct(s.c1M, s.c1P), outPct: pct(s.out, s.nA), pos: s.pd };
       }
     },
 
@@ -96,16 +97,17 @@
       canFinish: function (s) { return s.done; },
       summary: function (s) {
         return { score: s.rounds, rounds: s.rounds, resets: s.resets, putts: s.putts, pct: pct(s.made, s.putts),
-          by: (function () { var o = {}; s.dists.forEach(function (d) { o[d] = pct(s.by[d][1], s.by[d][0]); }); return o; })() };
+          by: (function () { var o = {}; s.dists.forEach(function (d) { o[d] = pct(s.by[d][1], s.by[d][0]); }); return o; })(),
+          byN: (function () { var o = {}; s.dists.forEach(function (d) { o[d] = s.by[d][0]; }); return o; })() };
       }
     },
 
     // ---------- TLAKOVÝ HRNEC ----------
     tlakovy_hrnec: {
       dists: [5, 6, 7, 8, 9],
-      init: function (variant, ds) { ds = ds || this.dists; var m = {}; ds.forEach(function (d) { m[d] = 0; }); return { v: variant, pos: ds, idx: 0, att: 0, rounds: [], backs: 0, miss: m, putts: 0, made: 0, done: false }; },
+      init: function (variant, ds) { ds = ds || this.dists; var m = {}; ds.forEach(function (d) { m[d] = 0; }); var c = {}; ds.forEach(function (d) { c[d] = 0; }); return { v: variant, pos: ds, idx: 0, att: 0, rounds: [], backs: 0, miss: m, cnt: c, putts: 0, made: 0, done: false }; },
       apply: function (s, ok) {
-        var d = s.pos[s.idx]; s.att++; s.putts++;
+        var d = s.pos[s.idx]; s.att++; s.putts++; s.cnt[d]++;
         if (ok) {
           s.made++;
           if (s.idx === s.pos.length - 1) { s.rounds.push(s.att); s.att = 0; s.idx = 0; if (s.rounds.length === 5) s.done = true; }
@@ -129,7 +131,7 @@
       summary: function (s) {
         var sum = s.rounds.reduce(function (a, b) { return a + b; }, 0);
         var worst = null, wv = 0; for (var d in s.miss) if (s.miss[d] > wv) { wv = s.miss[d]; worst = d; }
-        return { score: s.rounds.length ? Math.round(sum / s.rounds.length * 10) / 10 : 0, rounds: s.rounds, backs: s.backs, miss: s.miss, worst: worst, pct: pct(s.made, s.putts), putts: s.putts };
+        return { score: s.rounds.length ? Math.round(sum / s.rounds.length * 10) / 10 : 0, rounds: s.rounds, backs: s.backs, miss: s.miss, worst: worst, pct: pct(s.made, s.putts), putts: s.putts, cnt: s.cnt };
       }
     },
 
@@ -249,7 +251,7 @@
     if (dbox && def.dists) {
       var cur = loadDists();
       dbox.className = 'dists';
-      dbox.innerHTML = '<div class="lbl">Vzdálenosti (m)' + (def.dists.length > 1 ? ' – od nejkratší po nejdelší' : '') + '</div><div class="dgrid2"></div><p class="sub dmsg" style="margin:4px 0 8px;color:var(--bad)" hidden></p>';
+      dbox.innerHTML = '<div class="lbl">Vzdálenosti (m)' + (def.dists.length > 1 ? (def.free ? ' – pro jednotlivé pozice' : ' – od nejkratší po nejdelší') : '') + '</div><div class="dgrid2"></div><p class="sub dmsg" style="margin:4px 0 8px;color:var(--bad)" hidden></p>';
       var g = dbox.querySelector('.dgrid2');
       def.dists.forEach(function (dv, i) {
         var f = document.createElement('input'); f.type = 'number'; f.inputMode = 'decimal'; f.step = '0.5'; f.min = '1'; f.max = '100'; f.value = String(cur[i]); f.setAttribute('aria-label', (i + 1) + '. vzdálenost v metrech');
@@ -263,7 +265,7 @@
       if (dbox && ds) {
         var vals = dinputs.map(function (f) { return parseFloat(String(f.value).replace(',', '.')); }), msg = dbox.querySelector('.dmsg'), bad = '';
         if (vals.some(function (x) { return !(x >= 1 && x <= 100); })) bad = 'Zadej vzdálenosti 1–100 m.';
-        else for (var i = 1; i < vals.length; i++) if (vals[i] <= vals[i - 1]) bad = 'Zadej vzdálenosti od nejkratší po nejdelší (každá větší než předchozí).';
+        else if (!def.free) for (var i = 1; i < vals.length; i++) if (vals[i] <= vals[i - 1]) bad = 'Zadej vzdálenosti od nejkratší po nejdelší (každá větší než předchozí).';
         if (bad) { msg.textContent = bad; msg.hidden = false; return; }
         msg.hidden = true; ds = vals; try { localStorage.setItem(dkey, JSON.stringify(ds)); } catch (e) {}
       }

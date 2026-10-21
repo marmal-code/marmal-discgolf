@@ -179,3 +179,42 @@ function line_chart(array $pts, string $unit = '', int $H = 150): string {
     $s .= '<text x="' . $pl . '" y="' . ($H - 4) . '" class="axis">' . date('j. n.', strtotime($pts[0][0])) . '</text><text x="' . ($W - $pr) . '" y="' . ($H - 4) . '" class="axis" text-anchor="end">' . date('j. n.', strtotime(end($pts)[0])) . '</text>';
     return $s . '</svg>';
 }
+
+/** Přehled podle vzdáleností: [[vzdálenost, her, text], ...] seřazeno od nejkratší. */
+function drill_by_distance(string $key, array $rows, array $sum): array {
+    $agg = []; $ptsOf = fn($v) => is_numeric($v) ? (float)$v : null;
+    foreach ($sum as $i => $s) {
+        if (!is_array($s)) continue;
+        switch ($key) {
+            case 'osmdesatka':
+                $d = (string)(is_array($s['dists'] ?? null) && $s['dists'] ? $s['dists'][0] : 8); $a = &$agg[$d]; $a['g'] = ($a['g'] ?? 0) + 1; $sc = (float)($rows[$i]['score'] ?? 0);
+                $a['best'] = max($a['best'] ?? 0, $sc); $a['sum'] = ($a['sum'] ?? 0) + $sc; $a['goal'] = ($a['goal'] ?? 0) + (!empty($s['goal']) ? 1 : 0); $a['pm'] = ($a['pm'] ?? 0) + (int)($s['made'] ?? 0); $a['pn'] = ($a['pn'] ?? 0) + (int)($s['putts'] ?? 0); unset($a); break;
+            case 'zlata_zona':
+                foreach ((array)($s['dist'] ?? []) as $d => $v) if (is_numeric($d) && $ptsOf($v) !== null) { $a = &$agg[(string)$d]; $a['g'] = ($a['g'] ?? 0) + 1; $a['sum'] = ($a['sum'] ?? 0) + (float)$v; unset($a); } break;
+            case 'must_make':
+                foreach ((array)($s['pos'] ?? []) as $d => $p) if (is_numeric($d) && is_array($p)) { $a = &$agg[(string)$d]; $a['g'] = ($a['g'] ?? 0) + 1; foreach (['n', 'c1', 'p', 'm'] as $f) $a[$f] = ($a[$f] ?? 0) + (int)($p[$f] ?? 0); unset($a); } break;
+            case 'dvacetjedna':
+                foreach ((array)($s['by'] ?? []) as $d => $pc) if (is_numeric($d) && $ptsOf($pc) !== null) { $n = (int)($s['byN'][$d] ?? 0); $a = &$agg[(string)$d]; $a['g'] = ($a['g'] ?? 0) + 1; $w = $n ?: 1; $a['n'] = ($a['n'] ?? 0) + $n; $a['wp'] = ($a['wp'] ?? 0) + (float)$pc * $w; $a['w'] = ($a['w'] ?? 0) + $w; unset($a); } break;
+            case 'tlakovy_hrnec':
+                foreach ((array)($s['cnt'] ?? []) as $d => $n) if (is_numeric($d)) { $a = &$agg[(string)$d]; $a['g'] = ($a['g'] ?? 0) + 1; $a['n'] = ($a['n'] ?? 0) + (int)$n; $a['miss'] = ($a['miss'] ?? 0) + (int)($s['miss'][$d] ?? 0); unset($a); } break;
+            case 'risk':
+                foreach ((array)($s['ch'] ?? []) as $d => $n) if (is_numeric($d) && (int)$n > 0) { $a = &$agg[(string)$d]; $a['g'] = ($a['g'] ?? 0) + 1; $a['n'] = ($a['n'] ?? 0) + (int)$n; $a['ok'] = ($a['ok'] ?? 0) + (int)round((int)$n * (float)($s['pct'][$d] ?? 0) / 100); unset($a); } break;
+        }
+    }
+    $pc = fn($a, $b) => $b > 0 ? round($a / $b * 100) . ' %' : '–';
+    $out = [];
+    foreach ($agg as $d => $a) {
+        switch ($key) {
+            case 'osmdesatka': $t = 'nejlépe ' . drill_num($a['best']) . ' b. · Ø ' . drill_num($a['sum'] / $a['g']) . ' b. · cíl splněn ' . $a['goal'] . '× · putty ' . $pc($a['pm'], $a['pn']); break;
+            case 'zlata_zona': $t = 'Ø ' . drill_num($a['sum'] / $a['g']) . ' b. z 30'; break;
+            case 'must_make': $t = 'přihoz do C1 ' . $pc($a['c1'], $a['n']) . ' (' . $a['c1'] . '/' . $a['n'] . ') · putt v C1 ' . $pc($a['m'], $a['p']) . ' (' . $a['m'] . '/' . $a['p'] . ')'; break;
+            case 'dvacetjedna': $t = 'úspěšnost puttů ' . ($a['w'] > 0 ? round($a['wp'] / $a['w']) . ' %' : '–') . ($a['n'] ? ' z ' . $a['n'] . ' puttů' : ''); break;
+            case 'tlakovy_hrnec': $t = 'puttů ' . $a['n'] . ' · minuto ' . $a['miss'] . '× · úspěšnost ' . $pc($a['n'] - $a['miss'], $a['n']); break;
+            case 'risk': $t = $a['n'] . ' pokusů · úspěšnost ' . $pc($a['ok'], $a['n']); break;
+            default: $t = '';
+        }
+        $out[] = [(float)$d, $a['g'], $t];
+    }
+    usort($out, fn($x, $y) => $x[0] <=> $y[0]);
+    return $out;
+}
