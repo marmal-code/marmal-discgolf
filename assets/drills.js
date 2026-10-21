@@ -5,11 +5,11 @@
   var DRILLS = {
     // ---------- ZLATÁ ZÓNA ----------
     zlata_zona: {
-      init: function () { return { r: 0, di: 0, k: 0, total: 0, rounds: [0, 0, 0], dist: { 30: 0, 40: 0, 50: 0 }, types: { BH: [0, 0, 0], FH: [0, 0, 0], V: [0, 0, 0] }, n: 0, zone: 0, ob: 0, done: false }; },
+      init: function (v, ds) { ds = ds || this.dists; var dd = {}; ds.forEach(function (d) { dd[d] = 0; }); return { ds: ds, r: 0, di: 0, k: 0, total: 0, rounds: [0, 0, 0], dist: dd, types: { BH: [0, 0, 0], FH: [0, 0, 0], V: [0, 0, 0] }, n: 0, zone: 0, ob: 0, done: false }; },
       dists: [30, 40, 50], types: ['BH', 'BH', 'FH', 'FH', 'V'], typeNames: { BH: 'backhand', FH: 'forhand', V: 'volba' },
       roundNames: ['OB za zónou – nepřehazuj', 'OB před zónou – dohoď', 'OB před i za zónou'],
       apply: function (s, v) {
-        var t = this.types[s.k], d = this.dists[s.di];
+        var t = this.types[s.k], d = s.ds[s.di];
         s.total += v; s.rounds[s.r] += v; s.dist[d] += v; s.n++;
         s.types[t][0]++; if (v === 2) { s.zone++; s.types[t][1]++; } if (v === -2) { s.ob++; s.types[t][2]++; }
         s.k++; if (s.k === 5) { s.k = 0; s.di++; } if (s.di === 3) { s.di = 0; s.r++; } if (s.r === 3) s.done = true;
@@ -23,7 +23,7 @@
       status: function (s) {
         if (s.done) return { big: s.total, bigLabel: 'bodů z 90', line: 'Hotovo!' };
         return { big: s.total, bigLabel: 'bodů', line: 'Kolo ' + (s.r + 1) + '/3 · ' + this.roundNames[s.r],
-          sub: this.dists[s.di] + ' m · hod ' + (s.k + 1) + '/5 · <b>' + this.typeNames[this.types[s.k]] + '</b>' };
+          sub: s.ds[s.di] + ' m · hod ' + (s.k + 1) + '/5 · <b>' + this.typeNames[this.types[s.k]] + '</b>' };
       },
       label: function (v) { return { '2': 'zóna', '1': 'safe', '0': 'daleko', '-2': 'OB' }[String(v)]; },
       canFinish: function (s) { return s.done; },
@@ -71,18 +71,20 @@
     // ---------- 21 ----------
     dvacetjedna: {
       init: function (variant) {
-        var tri = variant === 'tri';
-        return { v: variant, n: tri ? 3 : 5, target: tri ? 18 : 21, miss: tri ? -1 : -2, dists: [5, 7, 9], cyc: 0, k: 0,
-          score: 0, rounds: 0, resets: 0, putts: 0, made: 0, by: { 5: [0, 0], 7: [0, 0], 9: [0, 0] }, done: false };
+        var tri = variant === 'tri', ds = arguments[1] || this.dists, by = {};
+        ds.forEach(function (d) { by[d] = [0, 0]; });
+        return { v: variant, n: tri ? 3 : 5, target: tri ? 18 : 21, miss: tri ? -1 : -2, dists: ds, cyc: 0, k: 0,
+          score: 0, rounds: 0, resets: 0, putts: 0, made: 0, by: by, done: false };
       },
-      dist: function (s) { return s.v === 'hardcore' && s.score >= 17 ? 9 : s.dists[s.cyc]; },
+      dists: [5, 7, 9],
+      dist: function (s) { return s.v === 'hardcore' && s.score >= 17 ? Math.max.apply(null, s.dists) : s.dists[s.cyc]; },
       apply: function (s, ok) {
         var d = this.dist(s);
         s.putts++; s.by[d][0]++; if (ok) { s.made++; s.by[d][1]++; }
         s.score += ok ? 1 : s.miss; s.k++;
         if (s.score >= s.target) { s.rounds++; s.done = true; return; }
         if (s.score <= -5) { s.score = 0; s.resets++; s.rounds++; s.cyc = 0; s.k = 0; return; }
-        if (s.k === s.n) { s.k = 0; s.rounds++; s.cyc = (s.cyc + 1) % 3; }
+        if (s.k === s.n) { s.k = 0; s.rounds++; s.cyc = (s.cyc + 1) % s.dists.length; }
       },
       buttons: function () { return [{ v: 1, l: 'Dal', sub: '+1', c: 'good' }, { v: 0, l: 'Minul', sub: '', c: 'bad' }]; },
       status: function (s) {
@@ -94,13 +96,14 @@
       canFinish: function (s) { return s.done; },
       summary: function (s) {
         return { score: s.rounds, rounds: s.rounds, resets: s.resets, putts: s.putts, pct: pct(s.made, s.putts),
-          by: { 5: pct(s.by[5][1], s.by[5][0]), 7: pct(s.by[7][1], s.by[7][0]), 9: pct(s.by[9][1], s.by[9][0]) } };
+          by: (function () { var o = {}; s.dists.forEach(function (d) { o[d] = pct(s.by[d][1], s.by[d][0]); }); return o; })() };
       }
     },
 
     // ---------- TLAKOVÝ HRNEC ----------
     tlakovy_hrnec: {
-      init: function (variant) { return { v: variant, pos: [5, 6, 7, 8, 9], idx: 0, att: 0, rounds: [], backs: 0, miss: { 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 }, putts: 0, made: 0, done: false }; },
+      dists: [5, 6, 7, 8, 9],
+      init: function (variant, ds) { ds = ds || this.dists; var m = {}; ds.forEach(function (d) { m[d] = 0; }); return { v: variant, pos: ds, idx: 0, att: 0, rounds: [], backs: 0, miss: m, putts: 0, made: 0, done: false }; },
       apply: function (s, ok) {
         var d = s.pos[s.idx]; s.att++; s.putts++;
         if (ok) {
@@ -132,7 +135,8 @@
 
     // ---------- OSMDESÁTKA ----------
     osmdesatka: {
-      init: function (variant) { return { v: variant, ser: [], cur: 0, curMade: 0, putts: 0, made: 0, done: false }; },
+      dists: [8],
+      init: function (variant, ds) { return { v: variant, d: (ds || this.dists)[0], ser: [], cur: 0, curMade: 0, putts: 0, made: 0, done: false }; },
       apply: function (s, ok) {
         s.cur++; s.putts++; if (ok) { s.curMade++; s.made++; }
         if (s.cur === 5) { s.ser.push(s.curMade); s.cur = 0; s.curMade = 0; if (s.ser.length === 10) s.done = true; }
@@ -144,7 +148,7 @@
         var dots = s.ser.map(function (m) { return '<span class="pdot' + (m >= 4 ? ' ok' : '') + '">' + m + '/5</span>'; }).join('');
         if (s.done) return { big: p, bigLabel: 'bodů z 10', line: p >= 8 ? 'Splněno! Cíl 8 bodů dosažen.' : 'Dohráno – cíl 8 bodů nesplněn.', sub: dots };
         var lost = s.cur - s.curMade;
-        return { big: p, bigLabel: 'bodů (cíl 8)', line: 'Série ' + (s.ser.length + 1) + '/10 · putt ' + (s.cur + 1) + '/5 · dáno ' + s.curMade, sub: dots,
+        return { big: p, bigLabel: 'bodů (cíl 8)', line: s.d + ' m · série ' + (s.ser.length + 1) + '/10 · putt ' + (s.cur + 1) + '/5 · dáno ' + s.curMade, sub: dots,
           extra: lost >= 2 ? 'Bod z téhle série už nezískáš – dohraj ji se stejnou rutinou.' : (p + (10 - s.ser.length) < 8 ? 'Cíl 8 bodů už nejde splnit – dohraj i tak, trénuješ návyk.' : '') };
       },
       label: function (v) { return v ? '✓' : '✗'; },
@@ -157,18 +161,18 @@
 
     // ---------- RISK JE ZISK ----------
     risk: {
-      init: function () { return { n: 0, score: 0, max: 0, misses: 0, ch: { 5: [0, 0], 6: [0, 0], 7: [0, 0] }, done: false }; },
-      pts: { 5: 1, 6: 2, 7: 3 },
+      dists: [5, 6, 7],
+      init: function (v, ds) { ds = ds || this.dists; var ch = {}, pts = {}; ds.forEach(function (d, i) { ch[d] = [0, 0]; pts[d] = i + 1; }); return { ds: ds, n: 0, score: 0, max: 0, misses: 0, ch: ch, pts: pts, done: false }; },
       apply: function (s, v) {
         var d = v.d; s.n++; s.ch[d][0]++;
-        if (v.ok) { s.ch[d][1]++; s.score += this.pts[d]; if (s.score > s.max) s.max = s.score; }
+        if (v.ok) { s.ch[d][1]++; s.score += s.pts[d]; if (s.score > s.max) s.max = s.score; }
         else { s.score = 0; s.misses++; }
         if (s.n === 10) s.done = true;
       },
-      buttons: function () {
+      buttons: function (s) {
         var b = [];
-        [5, 6, 7].forEach(function (d) {
-          b.push({ v: { d: d, ok: 1 }, l: d + ' m ✓', sub: '+' + { 5: 1, 6: 2, 7: 3 }[d], c: 'good' });
+        s.ds.forEach(function (d, i) {
+          b.push({ v: { d: d, ok: 1 }, l: d + ' m ✓', sub: '+' + (i + 1), c: 'good' });
           b.push({ v: { d: d, ok: 0 }, l: d + ' m ✗', sub: 'na 0', c: 'bad' });
         });
         return b;
@@ -182,7 +186,7 @@
       canFinish: function (s) { return s.done; },
       summary: function (s) {
         return { score: s.score, max: s.max, misses: s.misses, clean: s.misses === 0 ? 1 : 0,
-          ch: { 5: s.ch[5][0], 6: s.ch[6][0], 7: s.ch[7][0] }, pct: { 5: pct(s.ch[5][1], s.ch[5][0]), 6: pct(s.ch[6][1], s.ch[6][0]), 7: pct(s.ch[7][1], s.ch[7][0]) } };
+          ch: (function () { var o = {}; s.ds.forEach(function (d) { o[d] = s.ch[d][0]; }); return o; })(), pct: (function () { var o = {}; s.ds.forEach(function (d) { o[d] = pct(s.ch[d][1], s.ch[d][0]); }); return o; })() };
       }
     }
   };
@@ -200,7 +204,9 @@
     var persist = function () { try { localStorage.setItem(storeKey, JSON.stringify(st)); } catch (e) {} };
 
     var $ = function (id) { return document.getElementById(id); };
-    var compute = function () { var s = def.init(st.variant); st.events.forEach(function (ev) { def.apply(s, ev); }); return s; };
+    var okD = function (d) { return d == null || (Array.isArray(d) && d.length === (def.dists || []).length && d.every(function (x) { return x > 0; })); };
+    if (!okD(st.dists)) st.dists = null;
+    var compute = function () { var s = def.init(st.variant, st.dists); st.events.forEach(function (ev) { def.apply(s, ev); }); return s; };
 
     var render = function () {
       var s;
@@ -237,8 +243,31 @@
       $('d-hint').textContent = s.done ? 'Cvičení dokončeno – ulož výsledek.' : (def.finishHint || '');
     };
 
+    // vzdálenosti před hrou (pamatují se naposledy použité)
+    var dbox = $('d-dists'), dinputs = [], dkey = 'dists:' + key;
+    var loadDists = function () { var d = null; try { d = JSON.parse(localStorage.getItem(dkey) || 'null'); } catch (e) {} return (Array.isArray(d) && d.length === def.dists.length && d.every(function (x) { return x > 0; })) ? d : def.dists.slice(); };
+    if (dbox && def.dists) {
+      var cur = loadDists();
+      dbox.className = 'dists';
+      dbox.innerHTML = '<div class="lbl">Vzdálenosti (m)' + (def.dists.length > 1 ? ' – od nejkratší po nejdelší' : '') + '</div><div class="dgrid2"></div><p class="sub dmsg" style="margin:4px 0 8px;color:var(--bad)" hidden></p>';
+      var g = dbox.querySelector('.dgrid2');
+      def.dists.forEach(function (dv, i) {
+        var f = document.createElement('input'); f.type = 'number'; f.inputMode = 'decimal'; f.step = '0.5'; f.min = '1'; f.max = '100'; f.value = String(cur[i]); f.setAttribute('aria-label', (i + 1) + '. vzdálenost v metrech');
+        g.appendChild(f); dinputs.push(f);
+      });
+      var rst = document.createElement('button'); rst.type = 'button'; rst.className = 'btn sm ghost'; rst.textContent = 'Výchozí'; rst.addEventListener('click', function () { dinputs.forEach(function (f, i) { f.value = String(def.dists[i]); }); });
+      g.appendChild(rst);
+    }
     $('d-go').addEventListener('click', function () {
-      st = { started: Date.now(), variant: variantSel ? variantSel.value : 'normal', events: [] }; persist(); render();
+      var ds = def.dists ? def.dists.slice() : null;
+      if (dbox && ds) {
+        var vals = dinputs.map(function (f) { return parseFloat(String(f.value).replace(',', '.')); }), msg = dbox.querySelector('.dmsg'), bad = '';
+        if (vals.some(function (x) { return !(x >= 1 && x <= 100); })) bad = 'Zadej vzdálenosti 1–100 m.';
+        else for (var i = 1; i < vals.length; i++) if (vals[i] <= vals[i - 1]) bad = 'Zadej vzdálenosti od nejkratší po nejdelší (každá větší než předchozí).';
+        if (bad) { msg.textContent = bad; msg.hidden = false; return; }
+        msg.hidden = true; ds = vals; try { localStorage.setItem(dkey, JSON.stringify(ds)); } catch (e) {}
+      }
+      st = { started: Date.now(), variant: variantSel ? variantSel.value : 'normal', dists: ds, events: [] }; persist(); render();
     });
     $('d-undo').addEventListener('click', function () { st.events.pop(); persist(); render(); });
     var armed = 0, cancelBtns = [$('d-cancel'), $('d-restart')];
@@ -255,6 +284,7 @@
       var f = $('d-save');
       f.querySelector('[name=variant]').value = st.variant;
       f.querySelector('[name=events]').value = JSON.stringify(st.events);
+      if (st.dists) sum.dists = st.dists;
       f.querySelector('[name=summary]').value = JSON.stringify(sum);
       f.querySelector('[name=score]').value = sum.score;
       f.querySelector('[name=minutes]').value = Math.max(1, Math.round((Date.now() - st.started) / 60000));

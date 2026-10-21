@@ -43,6 +43,10 @@ function avg_of(array $rows, callable $f, int $n = 0): ?float {
     $v = array_values(array_filter(array_map($f, $rows), fn($x) => $x !== null));
     return $v ? array_sum($v) / count($v) : null;
 }
+function dist_keys(array $sum, string $field): array {
+    $k = []; foreach ($sum as $s) foreach ((array)($s[$field] ?? []) as $d => $_) if (is_numeric($d)) $k[(string)$d] = (float)$d;
+    asort($k); return array_keys($k);
+}
 $fmt = fn($v, $d = 0, $suf = '') => $v === null ? '–' : drill_num((float)$v, $d) . $suf;
 $best = drill_best($key, $var);
 $stats = [['Nejlepší', $fmt($best, 1, ' ' . $D['unit'])], ['Průměr posledních 5', $fmt(avg_of($sessions, fn($r) => (float)$r['score'], 5), 1, ' ' . $D['unit'])], ['Odehráno', count($sessions) . '×']];
@@ -51,7 +55,7 @@ try { switch ($key) {
         $stats[] = ['Do zóny (průměr)', $fmt(avg_of($sum, fn($s) => $s['zonePct'] ?? null), 0, ' %')];
         $stats[] = ['Zóna BH / FH', $fmt(avg_of($sum, fn($s) => $s['bhZone'] ?? null), 0, ' %') . ' / ' . $fmt(avg_of($sum, fn($s) => $s['fhZone'] ?? null), 0, ' %')];
         $stats[] = ['OB (průměr)', $fmt(avg_of($sum, fn($s) => $s['obPct'] ?? null), 0, ' %')];
-        foreach ([30, 40, 50] as $d) $stats[] = ['Body z ' . $d . ' m (průměr za hru)', $fmt(avg_of($sum, fn($s) => $s['dist'][$d] ?? null), 1)];
+        foreach (dist_keys($sum, 'dist') as $d) $stats[] = ['Body z ' . $d . ' m (průměr za hru)', $fmt(avg_of($sum, fn($s) => $s['dist'][$d] ?? null), 1)];
         break;
     case 'must_make':
         $stats[] = ['Přihoz do C1', $fmt(avg_of($sum, fn($s) => $s['c1AppPct'] ?? null), 0, ' %')];
@@ -61,13 +65,13 @@ try { switch ($key) {
     case 'dvacetjedna':
         $stats[] = ['Resetů (průměr)', $fmt(avg_of($sum, fn($s) => $s['resets'] ?? null), 1)];
         $stats[] = ['Úspěšnost puttů', $fmt(avg_of($sum, fn($s) => $s['pct'] ?? null), 0, ' %')];
-        foreach ([5, 7, 9] as $d) $stats[] = ['Z ' . $d . ' m', $fmt(avg_of($sum, fn($s) => ($s['by'][$d] ?? 0) ?: null), 0, ' %')];
+        foreach (dist_keys($sum, 'by') as $d) $stats[] = ['Z ' . $d . ' m', $fmt(avg_of($sum, fn($s) => ($s['by'][$d] ?? 0) ?: null), 0, ' %')];
         break;
     case 'tlakovy_hrnec':
         $stats[] = ['Návratů zpět (průměr)', $fmt(avg_of($sum, fn($s) => $s['backs'] ?? null), 1)];
         $stats[] = ['Úspěšnost puttů', $fmt(avg_of($sum, fn($s) => $s['pct'] ?? null), 0, ' %')];
-        $miss = [5 => 0, 6 => 0, 7 => 0, 8 => 0, 9 => 0];
-        foreach ($sum as $s) foreach (($s['miss'] ?? []) as $d => $m) $miss[(int)$d] = ($miss[(int)$d] ?? 0) + $m;
+        $miss = [];
+        foreach ($sum as $s) foreach ((array)($s['miss'] ?? []) as $d => $m) if (is_numeric($d)) $miss[(string)$d] = ($miss[(string)$d] ?? 0) + (int)$m;
         arsort($miss); $stats[] = ['Nejvíc chybuješ na', array_sum($miss) ? key($miss) . ' m (' . current($miss) . '× minul)' : '–'];
         break;
     case 'osmdesatka':
@@ -76,7 +80,7 @@ try { switch ($key) {
         break;
     case 'risk':
         $stats[] = ['Hry bez missu', array_sum(array_map(fn($s) => (int)($s['clean'] ?? 0), $sum)) . '×'];
-        foreach ([5, 6, 7] as $d) { $n = array_sum(array_map(fn($s) => (int)($s['ch'][$d] ?? 0), $sum)); $stats[] = ['Volba ' . $d . ' m', $n . '× · úspěšnost ' . $fmt(avg_of($sum, fn($s) => ($s['ch'][$d] ?? 0) ? ($s['pct'][$d] ?? null) : null), 0, ' %')]; }
+        foreach (dist_keys($sum, 'ch') as $d) { $n = array_sum(array_map(fn($s) => (int)($s['ch'][$d] ?? 0), $sum)); $stats[] = ['Volba ' . $d . ' m', $n . '× · úspěšnost ' . $fmt(avg_of($sum, fn($s) => ($s['ch'][$d] ?? 0) ? ($s['pct'][$d] ?? null) : null), 0, ' %')]; }
         break;
 } } catch (Throwable $e) { /* statistiky jsou doplněk, hra musí fungovat vždy */ }
 page_start($D['name'], 'cviceni.php');
@@ -89,6 +93,7 @@ page_start($D['name'], 'cviceni.php');
     <?php if ($D['variants']): ?>
       <div class="field"><label for="variant">Varianta</label><select id="variant"><?php foreach ($D['variants'] as $vk => $vl): ?><option value="<?= h($vk) ?>" <?= $vk === $var ? 'selected' : '' ?>><?= h($vl) ?></option><?php endforeach; ?></select></div>
     <?php endif; ?>
+    <div id="d-dists"></div>
     <button type="button" class="btn block" id="d-go">▶ Začít</button>
     <p class="sub" style="margin-bottom:0">Rozehraná hra se ukládá průběžně v telefonu – když zavřeš stránku, pokračuješ tam, kde jsi skončil.</p>
   </div>
@@ -118,7 +123,7 @@ page_start($D['name'], 'cviceni.php');
   <?php if (!$sessions) echo '<p class="sub" style="margin:0">Zatím žádná odehraná hra.</p>'; ?>
   <?php foreach (array_slice($sessions, 0, 20) as $i => $r): $s = $sum[$i]; ?>
     <form method="post" class="histrow" onsubmit="return confirm('Smazat tento záznam?')"><?= csrf_field() ?><input type="hidden" name="a" value="del"><input type="hidden" name="drill" value="<?= h($key) ?>"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-      <span class="grow"><b><?= h(drill_num((float)$r['score'])) ?> <?= h($D['unit']) ?></b> <small class="muted"><?= h(date('j. n. Y', strtotime($r['d']))) ?><?= $r['variant'] !== 'normal' && isset($D['variants'][$r['variant']]) ? ' · ' . h(explode(' (', $D['variants'][$r['variant']])[0]) : '' ?> · <?= (int)$r['minutes'] ?> min<?= $r['src'] === 'zdravi' ? ' · ze Zdraví' : (!$r['sent'] && health_conf_ok() ? ' · čeká na odeslání' : '') ?></small><?= $s ? '<br><small class="muted">' . h(drill_detail($key, $s)) . '</small>' : '' ?></span>
+      <span class="grow"><b><?= h(drill_num((float)$r['score'])) ?> <?= h($D['unit']) ?></b> <small class="muted"><?= h(date('j. n. Y', strtotime($r['d']))) ?><?= $r['variant'] !== 'normal' && isset($D['variants'][$r['variant']]) ? ' · ' . h(explode(' (', $D['variants'][$r['variant']])[0]) : '' ?> · <?= (int)$r['minutes'] ?> min<?= $r['src'] === 'zdravi' ? ' · ze Zdraví' : (!$r['sent'] && health_conf_ok() ? ' · čeká na odeslání' : '') ?></small><?= $s ? '<br><small class="muted">' . h(drill_detail($key, $s) . (!empty($s['dists']) && is_array($s['dists']) ? ' · ' . implode(' / ', array_map('strval', $s['dists'])) . ' m' : '')) . '</small>' : '' ?></span>
       <button class="btn sm danger" aria-label="Smazat">×</button></form>
   <?php endforeach; ?>
 </section>

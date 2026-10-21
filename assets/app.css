@@ -317,3 +317,4 @@ body{background:var(--bg)}
 .lockscr h1{font:800 28px var(--font-d);margin:6px 0 0}
 .resume{display:block;line-height:1.9;background:var(--good-bg);color:var(--good);border-radius:12px;padding:8px 12px;margin-bottom:12px;font-size:13.5px;font-weight:600}
 .pdot{display:inline-block;min-width:34px;padding:3px 6px;margin:4px 3px 0 0;border-radius:8px;background:var(--line);font:600 12px var(--font-b);text-align:center}.pdot.ok{background:var(--good-bg);color:var(--good)}.pdot.cur{outline:2px solid var(--accent)}
+.dists{margin-bottom:10px}.dgrid2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.dgrid2 input{width:84px;text-align:center}

@@ -92,7 +92,7 @@ const DRILLS = [
 'osmdesatka' => [
     'name' => 'Osmdesátka', 'icon' => '8️⃣', 'kind' => 'Putting – série', 'minutes' => 25,
     'metric' => 'Body z 10 sérií (cíl 8)', 'unit' => 'b.', 'better' => 'up',
-    'variants' => ['normal' => '8 m (základ)', 'm6' => '6 m', 'm7' => '7 m', 'm9' => '9 m', 'm10' => '10 m'],
+    'variants' => [],
     'about' => 'Trénink puttování zaměřený na konzistenci a mentální odolnost. Nejde o jeden výjimečný putt, ale o opakované trefování z vzdálenosti, která pro tebe není samozřejmá. Učíš se přijmout neúspěch a dohrát i ve chvíli, kdy už nemůžeš dosáhnout cíle.',
     'need' => ['Koš', '5 putterů', 'Zvolená vzdálenost (např. 8 m) – dosažitelná při plném soustředění, ale ne pohodlná'],
     'setup' => 'Zvol si vzdálenost, kterou zvládneš při plném soustředění. Po celou dobu cvičení zůstává stejná, mění se pouze úhel, ze kterého puttuješ. Na kladenském hřišti se hodí jamka č. 2 s různými pozicemi v přirozeném terénu.',
