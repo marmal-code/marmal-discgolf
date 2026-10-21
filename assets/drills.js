@@ -130,6 +130,31 @@
       }
     },
 
+    // ---------- OSMDESÁTKA ----------
+    osmdesatka: {
+      init: function (variant) { return { v: variant, ser: [], cur: 0, curMade: 0, putts: 0, made: 0, done: false }; },
+      apply: function (s, ok) {
+        s.cur++; s.putts++; if (ok) { s.curMade++; s.made++; }
+        if (s.cur === 5) { s.ser.push(s.curMade); s.cur = 0; s.curMade = 0; if (s.ser.length === 10) s.done = true; }
+      },
+      buttons: function () { return [{ v: 1, l: 'Dal', sub: '', c: 'good' }, { v: 0, l: 'Minul', sub: '', c: 'bad' }]; },
+      pts: function (s) { return s.ser.filter(function (m) { return m >= 4; }).length; },
+      status: function (s) {
+        var p = this.pts(s);
+        var dots = s.ser.map(function (m) { return '<span class="pdot' + (m >= 4 ? ' ok' : '') + '">' + m + '/5</span>'; }).join('');
+        if (s.done) return { big: p, bigLabel: 'bodů z 10', line: p >= 8 ? 'Splněno! Cíl 8 bodů dosažen.' : 'Dohráno – cíl 8 bodů nesplněn.', sub: dots };
+        var lost = s.cur - s.curMade;
+        return { big: p, bigLabel: 'bodů (cíl 8)', line: 'Série ' + (s.ser.length + 1) + '/10 · putt ' + (s.cur + 1) + '/5 · dáno ' + s.curMade, sub: dots,
+          extra: lost >= 2 ? 'Bod z téhle série už nezískáš – dohraj ji se stejnou rutinou.' : (p + (10 - s.ser.length) < 8 ? 'Cíl 8 bodů už nejde splnit – dohraj i tak, trénuješ návyk.' : '') };
+      },
+      label: function (v) { return v ? '✓' : '✗'; },
+      canFinish: function (s) { return s.done; },
+      finishHint: 'Dohraj všech 10 sérií, i když už cíl nejde splnit.',
+      summary: function (s) {
+        return { score: this.pts(s), series: s.ser, made: s.made, putts: s.putts, pct: pct(s.made, s.putts), goal: this.pts(s) >= 8 };
+      }
+    },
+
     // ---------- RISK JE ZISK ----------
     risk: {
       init: function () { return { n: 0, score: 0, max: 0, misses: 0, ch: { 5: [0, 0], 6: [0, 0], 7: [0, 0] }, done: false }; },
@@ -186,7 +211,7 @@
       if (variantSel) variantSel.value = st.variant;
       if (!active) return;
       var v = def.status(s);
-      var rs = $('d-resume'); if (rs) { rs.hidden = !st.events.length; var tm = new Date(st.started); $('d-resume-t').textContent = ('0' + tm.getHours()).slice(-2) + ':' + ('0' + tm.getMinutes()).slice(-2); }
+      var rs = $('d-resume'); if (rs) { rs.hidden = !st.events.length || !!s.done; var tm = new Date(st.started); $('d-resume-t').textContent = ('0' + tm.getHours()).slice(-2) + ':' + ('0' + tm.getMinutes()).slice(-2); }
       $('d-big').innerHTML = v.big;
       $('d-biglabel').textContent = v.bigLabel;
       $('d-line').innerHTML = v.line || '';

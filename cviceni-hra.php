@@ -70,6 +70,10 @@ try { switch ($key) {
         foreach ($sum as $s) foreach (($s['miss'] ?? []) as $d => $m) $miss[(int)$d] = ($miss[(int)$d] ?? 0) + $m;
         arsort($miss); $stats[] = ['Nejvíc chybuješ na', array_sum($miss) ? key($miss) . ' m (' . current($miss) . '× minul)' : '–'];
         break;
+    case 'osmdesatka':
+        $stats[] = ['Úspěšnost puttů', $fmt(avg_of($sum, fn($s) => $s['pct'] ?? null), 0, ' %')];
+        $stats[] = ['Cíl splněn (8+ b.)', count(array_filter($sum, fn($s) => !empty($s['goal']))) . '× z ' . count($sum)];
+        break;
     case 'risk':
         $stats[] = ['Hry bez missu', array_sum(array_map(fn($s) => (int)($s['clean'] ?? 0), $sum)) . '×'];
         foreach ([5, 6, 7] as $d) { $n = array_sum(array_map(fn($s) => (int)($s['ch'][$d] ?? 0), $sum)); $stats[] = ['Volba ' . $d . ' m', $n . '× · úspěšnost ' . $fmt(avg_of($sum, fn($s) => ($s['ch'][$d] ?? 0) ? ($s['pct'][$d] ?? null) : null), 0, ' %')]; }

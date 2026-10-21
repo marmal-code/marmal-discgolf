@@ -89,6 +89,24 @@ const DRILLS = [
     'tips' => ['Všimni si, jak se mění strategie s rostoucím skóre. Při 0 riskuješ snadno, při 8 najednou cítíš, že je co ztratit. Přesně tenhle moment je důvod, proč cvičení děláš.', 'Každý putt s kompletní turnajovou rutinou, i když házíš „jen“ z 5 m.', 'Hraj proti kamarádovi – tlak se znásobí.'],
     'progress' => ['Nejvyšší skóre z 10 puttů (max 30)', 'Průměrné skóre za 5 her', 'Počet her bez jediného missu'],
 ],
+'osmdesatka' => [
+    'name' => 'Osmdesátka', 'icon' => '8️⃣', 'kind' => 'Putting – série', 'minutes' => 25,
+    'metric' => 'Body z 10 sérií (cíl 8)', 'unit' => 'b.', 'better' => 'up',
+    'variants' => ['normal' => '8 m (základ)', 'm6' => '6 m', 'm7' => '7 m', 'm9' => '9 m', 'm10' => '10 m'],
+    'about' => 'Trénink puttování zaměřený na konzistenci a mentální odolnost. Nejde o jeden výjimečný putt, ale o opakované trefování z vzdálenosti, která pro tebe není samozřejmá. Učíš se přijmout neúspěch a dohrát i ve chvíli, kdy už nemůžeš dosáhnout cíle.',
+    'need' => ['Koš', '5 putterů', 'Zvolená vzdálenost (např. 8 m) – dosažitelná při plném soustředění, ale ne pohodlná'],
+    'setup' => 'Zvol si vzdálenost, kterou zvládneš při plném soustředění. Po celou dobu cvičení zůstává stejná, mění se pouze úhel, ze kterého puttuješ. Na kladenském hřišti se hodí jamka č. 2 s různými pozicemi v přirozeném terénu.',
+    'rules' => [
+        'Z jednoho místa odehraj sérii 5 puttů.',
+        'Pokud proměníš alespoň 4 z 5, získáš 1 bod. Při 3 a méně bod nezískáš.',
+        'Přesuň se na jiné místo kolem koše – vzdálenost zůstává stejná.',
+        'Odehraj celkem 10 sérií. Cíl: 8 bodů z 10 sérií.',
+        'Dohraj každou sérii, i když už po druhém missu víš, že bod nezískáš. Dohraj celé cvičení, i když už nemůžeš dosáhnout 8 bodů.',
+    ],
+    'scoring' => ['Série se 4 nebo 5 proměněnými putty = 1 bod', 'Série s 0 až 3 proměněnými putty = 0 bodů', 'Maximum 10 bodů, cílová hodnota 8 bodů'],
+    'tips' => ['Sleduj kvalitu puttů i v sériích, kde už bod nezískáš – zachovej stejnou rutinu jako v prvních, nezfláknout je.', 'Trénuješ návyky, ne pouhé výsledky.', 'Tlak roste – v pozdějších sériích je jeho vliv větší.', 'Pokud cvičení splníš na první pokus, příště zvol větší vzdálenost.'],
+    'progress' => ['Počet bodů z 10 sérií (cíl 8)', 'Celkový počet proměněných puttů z 50 a celková úspěšnost', 'Při splnění na první pokus zvýšit vzdálenost'],
+],
 ];
 
 // ───────────── historie cvičení (tabulka drill_sessions) ─────────────
@@ -140,6 +158,7 @@ function drill_detail(string $key, array $s): string {
         case 'must_make': return 'kola ' . implode(' · ', $s['rounds'] ?? []) . ' · C1 ' . ($s['c1AppPct'] ?? 0) . ' % · putt ' . ($s['c1PuttPct'] ?? 0) . ' %';
         case 'dvacetjedna': return ($s['resets'] ?? 0) . ' resetů · ' . ($s['putts'] ?? 0) . ' puttů · ' . ($s['pct'] ?? 0) . ' %';
         case 'tlakovy_hrnec': return 'kola ' . implode(' · ', $s['rounds'] ?? []) . ' pokusů · návratů ' . ($s['backs'] ?? 0);
+        case 'osmdesatka': return 'série ' . implode(' · ', array_map(fn($m) => (int)$m . '/5', (array)($s['series'] ?? []))) . ' · úspěšnost ' . ($s['pct'] ?? 0) . ' %';
         case 'risk': return 'max ' . ($s['max'] ?? 0) . ' · missů ' . ($s['misses'] ?? 0);
     }
     return '';

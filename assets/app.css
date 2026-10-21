@@ -315,4 +315,5 @@ body{background:var(--bg)}
 .lockscr .fp{width:96px;height:96px;border-radius:50%;background:var(--grad);display:grid;place-items:center;box-shadow:0 10px 30px rgba(47,208,123,.4)}
 .lockscr .fp svg{width:52px;height:52px;stroke:var(--accent-ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .lockscr h1{font:800 28px var(--font-d);margin:6px 0 0}
-.resume{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--good-bg);color:var(--good);border-radius:12px;padding:8px 12px;margin-bottom:12px;font-size:13.5px;font-weight:600}
+.resume{display:block;line-height:1.9;background:var(--good-bg);color:var(--good);border-radius:12px;padding:8px 12px;margin-bottom:12px;font-size:13.5px;font-weight:600}
+.pdot{display:inline-block;min-width:34px;padding:3px 6px;margin:4px 3px 0 0;border-radius:8px;background:var(--line);font:600 12px var(--font-b);text-align:center}.pdot.ok{background:var(--good-bg);color:var(--good)}.pdot.cur{outline:2px solid var(--accent)}
